@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="7.6IN_Diam_Sphere.SLDPRT">
+  <link
+    name="7.6IN_Diam_Sphere.SLDPRT">
+    <inertial>
+      <origin
+        xyz="0 1.35704753098827E-34 2.2163E-18"
+        rpy="0 0 0" />
+      <mass
+        value="3.7665" />
+      <inertia
+        ixx="0.014036"
+        ixy="0"
+        ixz="0"
+        iyy="0.014036"
+        iyz="0"
+        izz="0.014036" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5707963267949 0 0" />
+      <geometry>
+        <mesh
+          filename="package://7.6IN_Diam_Sphere.SLDPRT/meshes/7.6IN_Diam_Sphere.SLDPRT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.74902 0.74902 0.74902 1" />
+        <texture
+          filename="package://7.6IN_Diam_Sphere.SLDPRT/textures/" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5707963267949 0 0" />
+      <geometry>
+        <mesh
+          filename="package://7.6IN_Diam_Sphere.SLDPRT/meshes/7.6IN_Diam_Sphere.SLDPRT.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>
