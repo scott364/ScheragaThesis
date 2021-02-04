@@ -3,21 +3,20 @@
      Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="1.5in squarehole_C.SLDPRT">
-  <link
-    name="1.5in squarehole_C.SLDPRT">
+  name="1.5hole">
+  <link concave="yes" name="1.5hole">
     <inertial>
       <origin
-        xyz="1.2531E-18 1.16643755201581E-18 0.01905"
+        xyz="8.3352E-18 2.88943755201581E-18 0.01905"
         rpy="0 0 0" />
       <mass
         value="0.33798" />
       <inertia
         ixx="0.00037251"
-        ixy="3.7683E-20"
-        ixz="-6.1606E-21"
+        ixy="5.231E-20"
+        ixz="2.7732E-21"
         iyy="0.00037251"
-        iyz="1.77671125655159E-20"
+        iyz="1.89797025655159E-20"
         izz="0.00066325" />
     </inertial>
     <visual>
@@ -26,23 +25,23 @@
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://1.5in squarehole_C.SLDPRT/meshes/1.5in squarehole_C.SLDPRT.STL" />
+          filename="package://1.5hole/meshes/1.5hole.STL" />
       </geometry>
       <material
         name="">
         <color
           rgba="0 1 1 1" />
         <texture
-          filename="package://1.5in squarehole_C.SLDPRT/textures/" />
+          filename="package://1.5hole/textures/" />
       </material>
     </visual>
-    <collision>
+    <collision concave="yes">
       <origin
         xyz="0 0 0"
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://1.5in squarehole_C.SLDPRT/meshes/1.5in squarehole_C.SLDPRT.STL" />
+          filename="package://1.5hole/meshes/1.5hole.STL" />
       </geometry>
     </collision>
   </link>
