@@ -346,7 +346,7 @@ class SawyerMOD(Manipulator):
             publish_full_state (bool): True will publish more detailed state info., False will publish config/pose only.
         """
         super().__init__(robot_name, 
-                         ASSETS_PATH +'sawyer_description/urdf/combined5.urdf', position, orientation, fixed_base)
+                         ASSETS_PATH +'sawyer_description/urdf/sawyer_static_blockcombine.urdf', position, orientation, fixed_base)
                          #ASSETS_PATH +'sawyer_description/urdf/sawyer_static_classic.urdf', position, orientation, fixed_base)
 
         if Simulator.using_ros():
@@ -358,8 +358,11 @@ class SawyerMOD(Manipulator):
                 '/%s/set_head_pan' % self._name, Float32, self.set_head_pan)
 
         self._init_local_vars()
+        #self._init_forward_kinematics(
+        #    ASSETS_PATH + 'sawyer_description/urdf/sawyer_static.urdf')
         self._init_forward_kinematics(
-            ASSETS_PATH + 'sawyer_description/urdf/sawyer_static.urdf')
+            ASSETS_PATH + 'sawyer_description/urdf/sawyer_static_blockcombine.urdf')
+        
 
     def _init_forward_kinematics(self, urdf_file):
         gripper_tip_elements = get_chain_from_joints(urdf_file, joints=['right_arm_mount', 'right_j0', 'right_j1', 'right_j2',
