@@ -1,0 +1,51 @@
+
+2-10-2021
+Finally figured out how to attach the block to the arm. Turns out there were issues with the URDF file's 
+file references being relative to the folder the URDF file was in. 
+
+Created a Force+Torque "rolling plot" visualizer. 
+Got LaserRangeFinder to work for initial success detection. Need to figure out how to position it vertically. Changing the Orientation offset quaternion doesnt seem to have an effect/
+
+Current goals:
+- enable moving with X force
+-Checking if gripper at goal- change orientation of laserscanner!
+
+-start to implement DQN
+
+--look into changeing step size to match real sesnor
+
+
+
+
+
+
+________________________________
+2-3-2021
+Force/Torque feedback now works.
+end effector Roll/pitch/yaw works
+Setting camera angles works 
+I discovered my "hole" objects didn't have holes in the collision mesh. had to enable them in the urdf file. 
+
+Investigated methods of locking red block to arm:
+
+Initially attempted to combine using joinUrdf, initially appeared too complicated
+
+Used CreateConstraint, but the constrained shape appears to "drag" behind gripper,
+and block can get stuck outside of grippers entirely. 
+Played around with p.setPhysicsEngineParameter(numSolverIterations=100, numSubSteps
+to increase accuracy. I think it does, but if variables are too high- system is unstable. random things occur.
+
+Investigated multibody, but it only appears to  work for primitives-
+createCollisionShape- spheres, boxes, and meshes from .obj files
+
+Potential solutions-maybe there is a way to incorporate friction or damping better 
+with createConstraint? There are a lot of settings, I maxed many of them out with little effect. 
+
+Or- possibly joinURDFs to integrate block into the arm's geometry.
+
+or enable btGeneric6DofConstraint from Bullet into Pybullet?
+
+
+
+
+
