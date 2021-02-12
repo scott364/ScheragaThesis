@@ -619,7 +619,7 @@ class SawyerMOD(Manipulator):
 
         for i, j_idx in enumerate(joints_list):
             p.setJointMotorControl2(self._simulator_id, j_idx, p.POSITION_CONTROL,
-                                    target_position[i], target_velocity[i], maxVelocity=target_velocity[i],force=200) #setting max force to hopefully 20N ?
+                                    target_position[i], target_velocity[i], maxVelocity=target_velocity[i],force=70) #setting max force to hopefully 20N ?
 
     def move_with_joint_vel(self, desired_vel):
         """
