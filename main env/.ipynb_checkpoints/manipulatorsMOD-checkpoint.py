@@ -582,7 +582,6 @@ class SawyerMOD(Manipulator):
             desired_velocity (list): Desired joint velocities.
 
         '''
-
         target_position = list(desired_position)
         target_velocity = list(desired_velocity)
 
@@ -596,8 +595,7 @@ class SawyerMOD(Manipulator):
             rospy.logwarn("Invalid joint configuration/velocities provided for Sawyer %s. Function requires lists to be of length 1-7 floats (arm DoF only) or 9 floats (7 arm + 2 gripper DoF)" % self._name)
 
         elif len(target_position) == 7:
-            gripper_pos = p.getJointStates(
-                self._simulator_id, self._gripper_dof_indices)
+            gripper_pos = p.getJointStates(self._simulator_id, self._gripper_dof_indices)
             for entry in gripper_pos:
                 target_position.append(entry[0])
                 target_velocity.append(entry[1])
@@ -619,7 +617,7 @@ class SawyerMOD(Manipulator):
 
         for i, j_idx in enumerate(joints_list):
             p.setJointMotorControl2(self._simulator_id, j_idx, p.POSITION_CONTROL,
-                                    target_position[i], target_velocity[i], maxVelocity=target_velocity[i],force=70) #setting max force to hopefully 20N ?
+                                    target_position[i], target_velocity[i], maxVelocity=target_velocity[i],force= 70) #setting max force to hopefully 20N  70N is good ?
 
     def move_with_joint_vel(self, desired_vel):
         """
