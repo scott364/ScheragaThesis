@@ -11,11 +11,11 @@ from gym.utils import seeding
 import pybullet as p
 import pybullet_data
 
-class BalancebotEnv(gym.Env):
+#class BalancebotEnv(gym.Env):
+class MainEnvRL(gym.Env):
     metadata = {
         'render.modes': ['human', 'rgb_array'],
-        'video.frames_per_second' : 50
-    }
+        'video.frames_per_second' : 50}
 
     def __init__(self, render=True):
         self._observation = []
@@ -25,6 +25,7 @@ class BalancebotEnv(gym.Env):
 
         if (render):
             self.physicsClient = p.connect(p.GUI)
+            p.configureDebugVisualizer(p.COV_ENABLE_GUI,0) #disable explorer and camera views
         else:
             self.physicsClient = p.connect(p.DIRECT)  # non-graphical version
 

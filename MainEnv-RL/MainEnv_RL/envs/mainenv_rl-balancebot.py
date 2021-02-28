@@ -11,7 +11,8 @@ from gym.utils import seeding
 import pybullet as p
 import pybullet_data
 
-class BalancebotEnv(gym.Env):
+#class BalancebotEnv(gym.Env):
+class MainEnvRL(gym.Env):
     metadata = {
         'render.modes': ['human', 'rgb_array'],
         'video.frames_per_second' : 50
@@ -25,6 +26,7 @@ class BalancebotEnv(gym.Env):
 
         if (render):
             self.physicsClient = p.connect(p.GUI)
+            p.configureDebugVisualizer(p.COV_ENABLE_GUI,0) #disable explorer and camera views
         else:
             self.physicsClient = p.connect(p.DIRECT)  # non-graphical version
 
@@ -39,7 +41,7 @@ class BalancebotEnv(gym.Env):
         return [seed]
 
     def _step(self, action):
-        self._assign_throttle(action)  #for arm, increment by a small amount
+        self._assign_throttle(action)  #for arm, increment by a small amount (Investigate killing action if Force>20)
         p.stepSimulation()
         self._observation = self._compute_observation()  #investigate compputing a reward every 5 steps!
         reward = self._compute_reward()
