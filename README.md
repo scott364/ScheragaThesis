@@ -16,6 +16,8 @@ conda install jupyter
 
 conda install jupyterlab
 
+pip install gym baselines pybullet
+
 
 go into cairo_simulator folder
 
@@ -29,3 +31,15 @@ git clone https://github.com/openai/baselines.git
 go into baselines folder
 
 pip install -e .
+
+go into baselines folder
+
+pip install -e .
+
+cd MainEnv_RL
+
+pip install -e .
+
+https://backyardrobotics.wordpress.com/2017/11/27/build-a-balancing-bot-with-openai-gym-pt-i-setting-up/
+
+https://backyardrobotics.wordpress.com/2017/11/29/build-a-balancing-bot-with-openai-gym-pt-ii-the-robot-and-environment/
