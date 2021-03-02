@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="1.25hole">
+  <link concave="yes" name="1.25hole">
+    <inertial>
+      <origin
+        xyz="7.7286E-18 3.55323755201581E-18 0.01905"
+        rpy="0 0 0" />
+      <mass
+        value="0.35488" />
+      <inertia
+        ixx="0.00037802"
+        ixy="5.0377E-20"
+        ixz="2.1023E-21"
+        iyy="0.00037802"
+        iyz="1.80042873134604E-20"
+        izz="0.00067017" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5707963267949 0 0" />
+      <geometry>
+        <mesh
+          filename="package://1.25hole/meshes/1.25hole.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 1 1 1" />
+        <texture
+          filename="package://1.25hole/textures/" />
+      </material>
+    </visual>
+    <collision concave="yes">
+      <origin
+        xyz="0 0 0"
+        rpy="1.5707963267949 0 0" />
+      <geometry>
+        <mesh
+          filename="package://1.25hole/meshes/1.25hole.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

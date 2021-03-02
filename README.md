@@ -23,14 +23,6 @@ go into cairo_simulator folder
 
 pip install -e ./
 
-go to home folder
-
-git clone https://github.com/openai/baselines.git
-
-
-go into baselines folder
-
-pip install -e .
 
 go into baselines folder
 
@@ -39,6 +31,10 @@ pip install -e .
 cd MainEnv_RL
 
 pip install -e .
+
+
+in bashrc, add
+export PYTHONPATH="${PYTHONPATH}:/home/*USERNAMEHERE*/ScheragaThesis/MainEnv-RL"
 
 https://backyardrobotics.wordpress.com/2017/11/27/build-a-balancing-bot-with-openai-gym-pt-i-setting-up/
 

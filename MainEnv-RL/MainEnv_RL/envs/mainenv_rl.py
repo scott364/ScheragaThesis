@@ -3,35 +3,26 @@
 import os
 import math
 import numpy as np
-
 import gym
 from gym import spaces
 from gym.utils import seeding
-
 import pybullet as p
 import pybullet_data
-
-
 import time
 import sys
-
 from cairo_simulator.core.utils import ASSETS_PATH
 from cairo_simulator.core.log import Logger
 from cairo_simulator.core.link import *
 from cairo_simulator.core.simulator import Simulator, SimObject
-
 from cairo_simulator.devices.manipulators import Sawyer
 from cairo_simulator.devices.sensors import LaserRangeFinder
-
+from .manipulatorsMOD import SawyerMOD
+from .utils import load_configuration, save_config_to_configuration_file, manual_control, create_cuboid_obstacle
 from pybullet_utils import bullet_client as bc
 from pybullet_utils import urdfEditor as ed
 import pybullet_data
 import time
 import matplotlib.pyplot as plt
-
-#from manipulatorsMOD import SawyerMOD
-#from utils import load_configuration, save_config_to_configuration_file, manual_control, create_cuboid_obstacle
-
 
 #class BalancebotEnv(gym.Env):
 class MainEnvRL(gym.Env):
@@ -44,18 +35,69 @@ class MainEnvRL(gym.Env):
         self.action_space = spaces.Discrete(9)
         self.observation_space = spaces.Box(np.array([-math.pi, -math.pi, -5]), 
                                             np.array([math.pi, math.pi, 5])) # pitch, gyro, com.sp.
+        use_ros = False
+        use_real_time = True
+        logger = Logger()
+        sim = Simulator(logger=logger, use_ros=use_ros, use_real_time=use_real_time) # Initialize the Simulator
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0) #disable explorer and camera views 
+        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,0) 
+        p.setGravity(0,0,-9.81)
+        p.setTimeStep(0.01) # sec
+        #p.setPhysicsEngineParameter(enableFileCaching=0) # I am not sure what this does 
+        #p.setPhysicsEngineParameter(numSolverIterations=100, numSubSteps=10) #numSolverIterations=100, numSubSteps=10) #  #make physics more accurate by iterating by smaller steps?
+        #p.setPhysicsEngineParameter(solverResidualThreshold=1e-30)  # I am not sure what this does 
+        
+        p.resetDebugVisualizerCamera( cameraDistance=1.3, cameraYaw=92, cameraPitch=-37, 
+                                 cameraTargetPosition=[-0.001, 0.03, 0.03])  
+        #p.resetDebugVisualizerCamera( cameraDistance=1.5, cameraYaw=-30, cameraPitch=-30, cameraTargetPosition=[0.0, 0.0, 0.25]) 
+        ground_plane = SimObject("Ground", "plane.urdf", [0,0,0])
+        self.vt = 0 
+        self.vd = 0 #always zero
+        self.maxV = 24.6 # 235RPM = 24,609142453 rad/sec    
+        self._envStepCounter = 0
+        path = os.path.abspath(os.path.dirname(__file__))
+
+        table = SimObject('table', os.path.join(path, "NEWtable.urdf"),  (0.9, 0.1, .47),(1.5708*2,0,0),fixed_base=1)
+        sim_obj1 = SimObject('hole1', os.path.join(path, '1.5hole.urdf'),  (0.69, 0.1, .530),(0,0,0),fixed_base=1)  #1.5708 for 90 deg rotation
+        sim_obj2 = SimObject('hole2', os.path.join(path, '1.25hole.urdf'), (0.69, 0.3, .530),(0,0,0),fixed_base=1)
+        sim_obj3 = SimObject('hole3', os.path.join(path, '1.15hole.urdf'), (0.69, 0.5, .530),(0,0,0),fixed_base=1)    
+        sim_obj4 = SimObject('hole1', os.path.join(path, 'C_hole.urdf'),  (0.69, -0.5, .530),(0,0,0),fixed_base=1) 
+
+        sawyer_robot = SawyerMOD(robot_name="sawyer0"
+                       ,position=[0, 0, 0.8], fixed_base=1)
+        robotID=sawyer_robot.get_simulator_id() #numeric code for robot
+        print("robotID=",robotID)
+        
+        if os.path.exists("sawyerID.txt"):  # if a previous text file exits, delete it!
+              os.remove("sawyerID.txt")
+
+        f = open("sawyerID.txt", "a") #save the robot's sim ID to a text file, to avoid scope issues when we reset the environment
+        f.write(str(robotID))
+        f.close()
+        
+        jointPositions = [0.5009041352157391,0.2951560129283386,-1.2254625531233645,0.8216155636392285,-1.5183997750913025,-1.096785632443942,
+                          -0.08396404586438821]
+        dofindex=[3, 8, 9, 10, 11, 13, 16]
+        for y in range(len(dofindex)):
+            p.resetJointState(robotID, dofindex[y], jointPositions[y])
+
+        cubeStartPos = [2,0,0.001]
+        cubeStartOrientation = p.getQuaternionFromEuler([0,0,0])
+        self.botId = p.loadURDF(os.path.join(path, "balancebot_simple.xml"),
+                           cubeStartPos,
+                           cubeStartOrientation)
+        print("balancebot ID=",self.botId )
+        if os.path.exists("balancebotID.txt"):
+              os.remove("balancebotID.txt")
+        g = open("balancebotID.txt", "a") #save the segway's sim ID to a text file, to avoid scope issues when we reset the environment
+        g.write(str(self.botId))
+        g.close()
 
         if (render):
-            self.physicsClient = p.connect(p.GUI)
-            p.configureDebugVisualizer(p.COV_ENABLE_GUI,0) #disable explorer and camera views
-        else:
-            self.physicsClient = p.connect(p.DIRECT)  # non-graphical version
+            p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,1) #display env 
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())  # used by loadURDF
-
         self._seed()
-        
-        # paramId = p.addUserDebugParameter("My Param", 0, 100, 50)
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -73,24 +115,30 @@ class MainEnvRL(gym.Env):
         return np.array(self._observation), reward, done, {}
 
     def _reset(self):
-        # reset is called once at initialization of simulation
+
+        segwayfile = open("balancebotID.txt", "r")
+        segwayID= int(segwayfile.read())
+        segwayfile.close()
+        p.removeBody(segwayID)# remove segway
+       
+        sawyerIDfile = open("sawyerID.txt", "r")
+        sawyerID= int(sawyerIDfile.read())
+        sawyerIDfile.close()
+        jointPositions = [0.5009041352157391,0.2951560129283386,-1.2254625531233645,0.8216155636392285,-1.5183997750913025,-1.096785632443942,-0.08396404586438821]
+        dofindex=[3, 8, 9, 10, 11, 13, 16]
+        for y in range(len(dofindex)):
+                p.resetJointState(sawyerID, dofindex[y], jointPositions[y])   
         self.vt = 0 
         self.vd = 0 #always zero
-        self.maxV = 24.6 # 235RPM = 24,609142453 rad/sec
+        self.maxV = 24.6 # 235RPM = 24,609142453 rad/sec    
+        cubeStartPos = [2,0,0.001]
+        cubeStartOrientation = p.getQuaternionFromEuler([0,0,0])    
         self._envStepCounter = 0
-
-        p.resetSimulation()
-        p.setGravity(0,0,-10) # m/s^2
-        p.setTimeStep(0.01) # sec
-        planeId = p.loadURDF("plane.urdf")
-        cubeStartPos = [0,0,0.001]
-        cubeStartOrientation = p.getQuaternionFromEuler([0,0,0])
-
         path = os.path.abspath(os.path.dirname(__file__))
         self.botId = p.loadURDF(os.path.join(path, "balancebot_simple.xml"),
                            cubeStartPos,
                            cubeStartOrientation)
-
+        
         # you *have* to compute and return the observation from reset()
         self._observation = self._compute_observation()
         return np.array(self._observation)
@@ -121,6 +169,7 @@ class MainEnvRL(gym.Env):
 
     def _compute_done(self):
         cubePos, _ = p.getBasePositionAndOrientation(self.botId)
+        #return cubePos[2] < 0.15 or self._envStepCounter >= 1500
         return cubePos[2] < 0.15 or self._envStepCounter >= 1500
 
     def _render(self, mode='human', close=False):
