@@ -61,37 +61,31 @@ class MainEnvRL(gym.Env):
         sim_obj1 = SimObject('hole1', os.path.join(path, '1.5hole.urdf'),  (0.69, 0.1, .530),(0,0,0),fixed_base=1)  #1.5708 for 90 deg rotation
         sim_obj2 = SimObject('hole2', os.path.join(path, '1.25hole.urdf'), (0.69, 0.3, .530),(0,0,0),fixed_base=1)
         sim_obj3 = SimObject('hole3', os.path.join(path, '1.15hole.urdf'), (0.69, 0.5, .530),(0,0,0),fixed_base=1)    
-        sim_obj4 = SimObject('hole1', os.path.join(path, 'C_hole.urdf'),  (0.69, -0.5, .530),(0,0,0),fixed_base=1) 
-
+        sim_obj4 = SimObject('hole1', os.path.join(path, 'C_hole.urdf'),  (0.69, -0.5, .530),(0,0,0),fixed_base=1)
+        
+        self.lrf_sensor = LaserRangeFinder(position_offset=[0.69, 0.1, .530-(0.03)],
+                                  orientation_offset=[0, -0.7068252, 0, 0.7073883 ] ,fixed_pose=False)
+        self.lrf_sensor.set_range(0,0.0381) 
+        self.lrf_sensor.set_debug_mode(True) 
+        
         sawyer_robot = SawyerMOD(robot_name="sawyer0"
                        ,position=[0, 0, 0.8], fixed_base=1)
-        robotID=sawyer_robot.get_simulator_id() #numeric code for robot
-        print("robotID=",robotID)
+        self.sawyerID=sawyer_robot.get_simulator_id() #numeric code for robot
         
-        if os.path.exists("sawyerID.txt"):  # if a previous text file exits, delete it!
-              os.remove("sawyerID.txt")
-
-        f = open("sawyerID.txt", "a") #save the robot's sim ID to a text file, to avoid scope issues when we reset the environment
-        f.write(str(robotID))
-        f.close()
+        #print("robotID=",self.sawyerID)
         
         jointPositions = [0.5009041352157391,0.2951560129283386,-1.2254625531233645,0.8216155636392285,-1.5183997750913025,-1.096785632443942,
                           -0.08396404586438821]
         dofindex=[3, 8, 9, 10, 11, 13, 16]
         for y in range(len(dofindex)):
-            p.resetJointState(robotID, dofindex[y], jointPositions[y])
+            p.resetJointState(self.sawyerID, dofindex[y], jointPositions[y])
 
         cubeStartPos = [2,0,0.001]
         cubeStartOrientation = p.getQuaternionFromEuler([0,0,0])
-        self.botId = p.loadURDF(os.path.join(path, "balancebot_simple.xml"),
+        self.segwayID = p.loadURDF(os.path.join(path, "balancebot_simple.xml"),
                            cubeStartPos,
                            cubeStartOrientation)
-        print("balancebot ID=",self.botId )
-        if os.path.exists("balancebotID.txt"):
-              os.remove("balancebotID.txt")
-        g = open("balancebotID.txt", "a") #save the segway's sim ID to a text file, to avoid scope issues when we reset the environment
-        g.write(str(self.botId))
-        g.close()
+        #print("balancebot ID=",self.segwayID )
 
         if (render):
             p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,1) #display env 
@@ -115,19 +109,13 @@ class MainEnvRL(gym.Env):
         return np.array(self._observation), reward, done, {}
 
     def _reset(self):
-
-        segwayfile = open("balancebotID.txt", "r")
-        segwayID= int(segwayfile.read())
-        segwayfile.close()
-        p.removeBody(segwayID)# remove segway
-       
-        sawyerIDfile = open("sawyerID.txt", "r")
-        sawyerID= int(sawyerIDfile.read())
-        sawyerIDfile.close()
+        
+        p.removeBody(self.segwayID)
+        
         jointPositions = [0.5009041352157391,0.2951560129283386,-1.2254625531233645,0.8216155636392285,-1.5183997750913025,-1.096785632443942,-0.08396404586438821]
         dofindex=[3, 8, 9, 10, 11, 13, 16]
         for y in range(len(dofindex)):
-                p.resetJointState(sawyerID, dofindex[y], jointPositions[y])   
+                p.resetJointState(self.sawyerID, dofindex[y], jointPositions[y])   
         self.vt = 0 
         self.vd = 0 #always zero
         self.maxV = 24.6 # 235RPM = 24,609142453 rad/sec    
@@ -159,12 +147,16 @@ class MainEnvRL(gym.Env):
                                 targetVelocity=-vt)
 
     def _compute_observation(self):
+        
+        
         cubePos, cubeOrn = p.getBasePositionAndOrientation(self.botId)
         cubeEuler = p.getEulerFromQuaternion(cubeOrn)
         linear, angular = p.getBaseVelocity(self.botId)
         return [cubeEuler[0],angular[0],self.vt]
 
     def _compute_reward(self):
+        dist = self.lrf_sensor.get_reading()  #distance from laser range finder
+        #print("Laser dist=:",dist)
         return 0.1 - abs(self.vt - self.vd) * 0.005  #+ reqeard for standing still  #base this on last state
 
     def _compute_done(self):

@@ -5,7 +5,24 @@ Resolved issues with relative import statements, as files wouldnt import correct
 
 Resolved issue where env took 1-2 seconds to instantiate at each refresh because of the saywer model. Learned to not use p.resetSimulation(), and instead, instantiate the sawyer once, and p.resetJointState() at each referesh. To ensure RL system worked, I did p.removebody() on the segway modelm, and reinstantiated it each each reset. 
 
-Figured out how to run non-grpahical mode, which runs faster!
+Figured out how to run non-graphical mode, which seems to run faster!
+-- 
+still exploring implmenenting motion in environment.
+Plan for rewards:
+-Distance to table surface
+
+To copy Inoue 2017 Deep Reinforcement Learning for High Precision Assembly Tasks:
+Two stage policy:
+Search:  the  robot  places  the  peg  center  within  theclearance region of the hole center
+Insertion:  the  robot  adjusts  the  orientation  of  the  pegwith respect to the hole orientation and pushes the pegto the desired position
+
+So, stage 1- xy distance (parallel to table surface) to true goal, and z distance to some small height above target
+stage 2- laser rangefinder (in the hole) distance output
+
+notes:
+Tell carl about the reset trick
+
+No 1:1 meetings next week
 
 ________________________________
 
