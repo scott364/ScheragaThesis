@@ -81,7 +81,8 @@ class MainEnvRL(gym.Env):
             sim_obj3 = SimObject('hole3', os.path.join(path, '1.15hole.urdf'), (0.69, 0.5, .530),(0,0,0),fixed_base=1)    
             sim_obj4 = SimObject('hole1', os.path.join(path, 'C_hole.urdf'),  (0.69, -0.5, .530),(0,0,0),fixed_base=1) 
             
-            sawyer_robot = SawyerMOD(robot_name="sawyer0" ,position=[0, 0, 0.8], fixed_base=1)
+            sawyer_robot = SawyerMOD(robot_name="sawyer0"
+                           ,position=[0, 0, 0.8], fixed_base=1)
             robotID=sawyer_robot.get_simulator_id() #numeric code for robot
             print("robotID=",robotID)
             f = open("sawyerID.txt", "a")

@@ -1,0 +1,111 @@
+
+
+3-17-2021
+start from same position- learn to move to goal
+
+- set up random start position on reset 
+
+write project workshop instread of paper talk 
+
+instead of 1:1 meetings- instead have group meetings
+
+irb forms?
+________________________________
+3-3-2021
+Resolved issues with relative import statements, as files wouldnt import correctly 
+
+Resolved issue where env took 1-2 seconds to instantiate at each refresh because of the saywer model. Learned to not use p.resetSimulation(), and instead, instantiate the sawyer once, and p.resetJointState() at each referesh. To ensure RL system worked, I did p.removebody() on the segway modelm, and reinstantiated it each each reset. 
+
+Figured out how to run non-graphical mode, which seems to run faster!
+-- 
+still exploring implmenenting motion in environment.
+Plan for rewards:
+-Distance to table surface
+
+To copy Inoue 2017 Deep Reinforcement Learning for High Precision Assembly Tasks:
+Two stage policy:
+Search:  the  robot  places  the  peg  center  within  theclearance region of the hole center
+Insertion:  the  robot  adjusts  the  orientation  of  the  pegwith respect to the hole orientation and pushes the pegto the desired position
+
+So, stage 1- xy distance (parallel to table surface) to true goal, and z distance to some small height above target
+stage 2- laser rangefinder (in the hole) distance output
+
+________________________________
+
+2-24-2021
+
+Got balancebot pybullet gym environment to run and render properly. Balancebot was a 3d party demo and its syntax wasn't up to date with OpenAI baseline's current function definitions. Balancebot successfully balances after 260 episodes. Still learning the in's and outs of the balancebot example. I am trying to keep close to the OpenAI baseline's environment standards, to allow for easier switching later on to other RL algorithms like LSTM's ,etc. 
+
+Big issue I still need to solve:  Force limiting for the entire robot.The Robotic Materials lab's UR5 can do this in real life.  Currently, simulated robot is limited to 70N at each joint, :
+
+
+for i, j_idx in enumerate(joints_list):
+ p.setJointMotorControl2(self._simulator_id, j_idx, p.POSITION_CONTROL,
+                                    target_position[i], target_velocity[i], 						maxVelocity=target_velocity[i],force= 70) 
+
+
+ however, it still applies 250+ N (seen at the wrist sensor) to the table moving in straight lines away from the origin, skidding the red block into the goal, unrealistically. Is there a way to check at each timestep that if the force is above a maximum, and stop the move_to_joint_pos
+
+advisor meeting notes:
+reward based on:
+
+state-action , state  
+
+put force into state space
+
+r(s,as')
+
+state space in inclcuids current and previous forces'
+
+
+sean humbert +  rensshaler? 
+
+nicholaus +heckman  has a courtesy appt
+
+process_trajectory_queues and estop may be a way to stop actions if force>limit
+________________________________
+2-10-2021
+Finally figured out how to attach the block to the arm. Turns out there were issues with the URDF file's 
+file references being relative to the folder the URDF file was in. 
+
+Created a Force+Torque "rolling plot" visualizer. 
+Got LaserRangeFinder to work for initial success detection. Need to figure out how to position it vertically. Changing the Orientation offset quaternion doesnt seem to have an effect/
+
+Current goals:
+- enable moving with X force
+-Checking if gripper at goal- change orientation of laserscanner!
+
+-start to implement DQN
+
+--look into changeing step size to match real sesnor
+
+_______________________
+2-3-2021
+Force/Torque feedback now works.
+end effector Roll/pitch/yaw works
+Setting camera angles works 
+I discovered my "hole" objects didn't have holes in the collision mesh. had to enable them in the urdf file. 
+
+Investigated methods of locking red block to arm:
+
+Initially attempted to combine using joinUrdf, initially appeared too complicated
+
+Used CreateConstraint, but the constrained shape appears to "drag" behind gripper,
+and block can get stuck outside of grippers entirely. 
+Played around with p.setPhysicsEngineParameter(numSolverIterations=100, numSubSteps
+to increase accuracy. I think it does, but if variables are too high- system is unstable. random things occur.
+
+Investigated multibody, but it only appears to  work for primitives-
+createCollisionShape- spheres, boxes, and meshes from .obj files
+
+Potential solutions-maybe there is a way to incorporate friction or damping better 
+with createConstraint? There are a lot of settings, I maxed many of them out with little effect. 
+
+Or- possibly joinURDFs to integrate block into the arm's geometry.
+
+or enable btGeneric6DofConstraint from Bullet into Pybullet?
+
+
+
+
+
