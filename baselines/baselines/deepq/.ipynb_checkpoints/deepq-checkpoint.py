@@ -108,7 +108,7 @@ def learn(env,
           learning_starts=1000,
           gamma=1.0,
           target_network_update_freq=500,
-          prioritized_replay=False,
+          prioritized_replay=True, #False,  ##False is default!
           prioritized_replay_alpha=0.6,
           prioritized_replay_beta0=0.4,
           prioritized_replay_beta_iters=None,
