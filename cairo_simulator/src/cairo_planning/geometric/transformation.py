@@ -68,12 +68,27 @@ def rpy2quat(rpy, degrees=False):
         degrees (bool, optional): False for radians, True for degrees. Defaults to False.
 
     Returns:
-        ndarray: The quaternion in wxzy form.
+        ndarray: The quaternion in wxyz form.
     """
     quat = R.from_euler(
         'xyz', rpy, degrees=degrees).as_quat()
     return np.array((quat[3], quat[0], quat[1], quat[2]))
 
+
+def rpy2quatV2(rpy, degrees=False):
+    """
+    Produces the quaternion representation of euler angles in extrinsic RPY form.
+
+    Args:
+        rpy (array-like): The RPY vector
+        degrees (bool, optional): False for radians, True for degrees. Defaults to False.
+
+    Returns:
+        ndarray: The quaternion in wxyz form.
+    """
+    quat = R.from_euler(
+        'xyz', rpy, degrees=degrees).as_quat()
+    return np.array(( quat[0], quat[1], quat[2],quat[3]))
 
 def pose2trans(xyzwxyz):
     """

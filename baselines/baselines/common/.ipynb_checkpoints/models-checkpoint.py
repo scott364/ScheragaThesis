@@ -166,9 +166,9 @@ def lstm(nlstm=128, layer_norm=False):
         nsteps = nbatch // nenv
 
         h = tf.compat.v1.layers.flatten(X)
-
-        M = tf.placeholder(tf.float32, [nbatch]) #mask (done t-1)
-        S = tf.placeholder(tf.float32, [nenv, 2*nlstm]) #states
+        #h= keras.layers.flatten(X)
+        M = tf.compat.v1.placeholder(tf.float32, [nbatch]) #mask (done t-1)
+        S = tf.compat.v1.placeholder(tf.float32, [nenv, 2*nlstm]) #states
 
         xs = batch_to_seq(h, nenv, nsteps)
         ms = batch_to_seq(M, nenv, nsteps)

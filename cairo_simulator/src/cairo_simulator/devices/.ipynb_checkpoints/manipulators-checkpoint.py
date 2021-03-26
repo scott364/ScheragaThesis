@@ -220,8 +220,10 @@ class Manipulator(Robot):
             # Convert position from robot-centric coordinate space to world coordinates
             robot_world_pose = p.getBasePositionAndOrientation(
                 self._simulator_id)
+            print(robot_world_pose) #added 3/24/2021
             robot_world_position, robot_world_ori_euler = robot_world_pose[:3], p.getEulerFromQuaternion(
                 robot_world_pose[3:])
+            
             transform_from_robot_local_coord_to_world_frame = compute_3d_homogeneous_transform(
                 robot_world_pose[0], robot_world_pose[1], robot_world_pose[2], robot_world_ori_euler[0], robot_world_ori_euler[1], robot_world_ori_euler[2])
             target_point = np.array([*target_position, 1])

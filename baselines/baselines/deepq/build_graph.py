@@ -112,15 +112,15 @@ def scope_vars(scope, trainable_only=False):
     vars: [tf.Variable]
         list of variables in `scope`.
     """
-    return tf.get_collection(
-        tf.GraphKeys.TRAINABLE_VARIABLES if trainable_only else tf.GraphKeys.GLOBAL_VARIABLES,
+    return tf.compat.v1.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES if trainable_only else tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
         scope=scope if isinstance(scope, str) else scope.name
     )
 
 
 def scope_name():
     """Returns the name of current scope as a string, e.g. deepq/q_func"""
-    return tf.get_variable_scope().name
+    return tf.compat.v1.get_variable_scope().name
 
 
 def absolute_scope_name(relative_scope_name):
@@ -129,7 +129,7 @@ def absolute_scope_name(relative_scope_name):
 
 
 def default_param_noise_filter(var):
-    if var not in tf.trainable_variables():
+    if var not in tf.compat.v1.trainable_variables():
         # We never perturb non-trainable vars.
         return False
     if "fully_connected" in var.name:

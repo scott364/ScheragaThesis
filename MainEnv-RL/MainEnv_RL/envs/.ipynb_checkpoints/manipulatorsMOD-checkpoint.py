@@ -230,13 +230,13 @@ class Manipulator(Robot):
 
         if target_orientation is None:
             ik_solution = p.calculateInverseKinematics(
-                self._simulator_id, self._end_effector_link_index, target_position, maxNumIterations=120)
+                self._simulator_id, self._end_effector_link_index, target_position, maxNumIterations=420) #120 default
         else:
             if len(target_orientation) == 3:
                 target_orientation = p.getQuaternionFromEuler(
                     target_orientation)
             ik_solution = p.calculateInverseKinematics(
-                self._simulator_id, self._end_effector_link_index, target_position, targetOrientation=target_orientation, maxNumIterations=120)
+                self._simulator_id, self._end_effector_link_index, target_position, targetOrientation=target_orientation, maxNumIterations=420) #120 default
 
         # Return a configuration of only the arm's joints.
         arm_config = [0] * len(self._arm_ik_indices)

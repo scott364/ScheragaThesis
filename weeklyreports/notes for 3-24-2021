@@ -1,11 +1,11 @@
 3-24-2021
 
-Got rough DQN and DQN+ prioritized experience replay to sort-of work from both a sommon starting location and random locations
+Got rough DQN and DQN + prioritized experience replay to learn to head to a target on the xy plane both a common starting location and random locations
 dense rewards: -1*magnitude of distance to target
 action space: +/- x or y
 observations space:  tried both x and y distances to target and current x and y position
 
-Having a large issue with  solveinversekinematics not moving the gripper to intended locations. When I put an object at an xyz coordinate, putting the same coordinate into solveinversekinematics, it goes elsewhere.
+Having a large issue with  solveinversekinematics not moving the gripper to intended locations. When I put an object at an xyz coordinate, putting the same coordinate into solveinversekinematics, it goes elsewhere. Also, using the same orientation quaternion changes in both my original keyboard control code and the RL environment result in different orientation chagnes 
 
 Also need to solve how to speed up simulation. Sim needs time for arm to move from one location to another with this command:
 
@@ -14,9 +14,24 @@ self.sawyer_robot.move_to_joint_pos(self.joint_config2)
 
 Is there a faster way??
 
+Having a large issue getting openai baselines' lstm network generation function to work without errors. Experiemented with generating a network with keras, and trying to relearn tensorflow keras. No luck so far. 
+
+starting to look into StableBaselines instead of openai baselines..as some reddit posts say their code has been known to break
+
+per
+make a classififer- 
+
+
+#rpy2quat  in cairo_planning/geometric/transformation
+watch quaternion video!!!!
+
+Carl will work on move to joint pos
+
+I need to work on behavior trees stuff, implement stable baselines instead of openai baselines to get lstm to work, rpy to quat to work in the keyboard code
 
 
 
+________________________________
 
 3-17-2021
 start from same position- learn to move to goal
