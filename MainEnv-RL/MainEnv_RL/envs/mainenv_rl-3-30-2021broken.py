@@ -53,7 +53,7 @@ class MainEnvRL(gym.Env):
         
         self.observation_space = spaces.Box(np.array([-5, -5, -5]), 
                                             np.array([5, 5, 5])) # pitch, gyro, com.sp.
-        self.render=render
+        
         
         use_ros = False
         use_real_time = True #True
@@ -65,16 +65,13 @@ class MainEnvRL(gym.Env):
         p.setPhysicsEngineParameter(solverResidualThreshold=1e-30)
         
         p.setGravity(0,0,-9.81)
-        self.fig, (self.ax1) = plt.subplots(1,figsize=(8,8))
         #p.setTimeStep(0.01) # sec
         
         #p.setPhysicsEngineParameter(numSolverIterations=100, numSubSteps=10) #numSolverIterations=100, numSubSteps=10) #  #make physics more accurate by iterating by smaller steps?
         #p.setPhysicsEngineParameter(solverResidualThreshold=1e-30)  # I am not sure what this does 
         
         p.resetDebugVisualizerCamera( cameraDistance=1.3, cameraYaw=92, cameraPitch=-37, cameraTargetPosition=[-0.001, 0.03, 0.03])  
-        self.curr_action_config = None #when the sim starts, there is no current target. needs to call motion selector to get a target
-        self.episodecounter=0
-        """
+        
         ground_plane = SimObject("Ground", "plane.urdf", [0,0,0])
         #self.maxV = 24.6 # 235RPM = 24,609142453 rad/sec    
         self._envStepCounter = 0
@@ -160,14 +157,14 @@ class MainEnvRL(gym.Env):
         #self.target_truepose=self.sawyer_robot.get_joint_pose_in_world_frame()
         #print("world frame pose", self.target_truepose)
       
-        
+        """
         self.joint_config = self.sawyer_robot.solve_inverse_kinematics(a[0],self.orientation) #,target_in_local_coords=False
         for j in range(len(self.dofindex)):
             p.resetJointState(self.sawyerID, self.dofindex[j], self.joint_config[j])  
         time.sleep(.4) 
         self.sawyer_robot.move_to_joint_pos(self.joint_config)
         time.sleep(.4)
-        
+        """
         
         #print("offset to arm pos =", xyz[0]-a[0][0],xyz[1]-a[0][1],xyz[2]-a[0][2])
 
@@ -183,12 +180,11 @@ class MainEnvRL(gym.Env):
         
         self.dist=-1
         
-        if (self.render):
+        if (render):
             p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,1) #display env 
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())  # used by loadURDF
-        """
-        self.resetEnvironment()
+    
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -197,13 +193,11 @@ class MainEnvRL(gym.Env):
     #def _step(self, action):
     def step(self, action):
         #self._assign_throttle(action)  #for arm, increment by a small amount (Investigate killing action if Force>20)
+        
         self.motionselector(action)
-#         while self.sawyer_robot.check_if_at_position(self.curr_action_config, .2) is False:
-#             #for multistep in range(100): #step forward 10 steps before observation
-#             #.stepSimulation()
-#             time.sleep(0.4)
-            # we can still check if we violate a torque limit etc and if that happens, we can collect an observation, reward and make sure done is now true so we move onto a new action or terminate the current policy rollout.
-        time.sleep(.3)
+        #for multistep in range(100): #step forward 10 steps before observation
+            #p.stepSimulation()
+            
         self._observation = self._compute_observation()  
         reward = self._compute_reward()
         done = self._compute_done()
@@ -211,10 +205,9 @@ class MainEnvRL(gym.Env):
         self._envStepCounter += 1
         self.dist = self.lrf_sensor1.get_reading()
         #dist2 = self.lrf_sensor2.get_reading()
-        return np.array(self._observation), reward, done, {}
 
         
-        
+        return np.array(self._observation), reward, done, {}
     
 
     #def _reset(self):
@@ -237,17 +230,20 @@ class MainEnvRL(gym.Env):
         #self.ycurrent=random.uniform(self.targety-0.0254, self.targety+0.0254 )
         #self.zstart=0.9
         
-        
-        
-        
-        
         """
+        
+        p.resetSimulation(0)
+        
+        
         #p.removeBody(self.sawyerID)
         
         
         self.sawyer_robot = SawyerMOD(robot_name="sawyer0",position=[0, 0, 0.8], fixed_base=1)
         self.sawyerID=self.sawyer_robot.get_simulator_id() #numeric code for robot
-  
+        
+        
+        
+        
 
         self.xstart=0.7#0.715
         self.ystart=0.08#0.035
@@ -288,8 +284,6 @@ class MainEnvRL(gym.Env):
         print("world frame pose after true reset", self.target_truepose)
         """
         
-        
-        """
         self.xcurrent=0.7#0.715
         self.ycurrent=0.08#0.08#0.035
         self.zcurrent=0.87 #0.95
@@ -307,16 +301,13 @@ class MainEnvRL(gym.Env):
         self.target_truepose=self.sawyer_robot.get_joint_pose_in_world_frame()
         print("world frame pose after reset to 0.7,0.8,0.87", self.target_truepose)
         
-        
+        """
         for k in range(len(self.dofindex)):
                 #p.resetJointState(self.sawyerID, dofindex[y], self.jointPositions[y]) 
                 p.resetJointState(self.sawyerID, self.dofindex[k], self.joint_config[k])  
-        
+        """
 
         print("joint config",self.joint_config)
-        """
-        p.resetSimulation(0)
-        self.resetEnvironment()
 
         #print(self.sawyer_robot.get_current_joint_states())
         #self.dist=-1
@@ -327,105 +318,7 @@ class MainEnvRL(gym.Env):
    
         self._observation = self._compute_observation()
         return np.array(self._observation)
-    
-    def resetEnvironment(self):
-    
-        ground_plane = SimObject("Ground", "plane.urdf", [0,0,0])
-        #self.maxV = 24.6 # 235RPM = 24,609142453 rad/sec    
-        self._envStepCounter = 0
-        path = os.path.abspath(os.path.dirname(__file__))
 
-        table = SimObject('table', os.path.join(path, "NEWtable.urdf"),  (0.9, 0.1, .47),(1.5708*2,0,0),fixed_base=1)
-        
-        sim_obj1 = SimObject('hole1', os.path.join(path, '1.5hole.urdf'),  (0.69, 0.1, .530),(0,0,0),fixed_base=1)  #1.5708 for 90 deg rotation
-        sim_obj2 = SimObject('hole2', os.path.join(path, '1.25hole.urdf'), (0.69, 0.3, .530),(0,0,0),fixed_base=1)
-        sim_obj3 = SimObject('hole3', os.path.join(path, '1.15hole.urdf'), (0.69, 0.5, .530),(0,0,0),fixed_base=1)    
-        sim_obj4 = SimObject('c_hole', os.path.join(path, 'C_hole.urdf'),  (0.69, -0.5, .530),(0,0,0),fixed_base=1)
-        
-        #sim_obj4ID=sim_obj4.get_simulator_id()
-        #p.removeBody(sim_obj4ID)
-        
-        self.lrf_sensor1 = LaserRangeFinder(position_offset=[0.69, 0.1, .530 ],          
-                                  orientation_offset=[0, -0.7068252, 0, 0.7073883 ] ,fixed_pose=False)
-        
-        #for world frame shift testing
-        #testblock = SimObject('testblock', os.path.join(path, '1.25hole.urdf'), (0.69, 0.3, .570),(0,0,0),fixed_base=1)
-        #self.testblockID=testblock.get_simulator_id()
-        #p.removeBody(sim_obj4ID)
-        
-      
-      
-        #self.lrf_sensor.set_range(0,0.0381) #to be just inside hole1
-        self.lrf_sensor1.set_range(0,0.11) 
-        self.lrf_sensor1.set_debug_mode(True) 
-    
-        self.fig, (self.ax1) = plt.subplots(1,figsize=(8,8))
-        self.rewardlist=[]
-        self.episodecounter=0
-        
-        #print(self.sawyer_robot._arm_dof_indices) #[3, 8, 9, 10, 11, 13, 16]  #these correspond to the links
-        #print(self.sawyer_robot._arm_dof_names) 
-        
-        self._seed()
-        #self.xstart=random.uniform(self.targetx-0.0127 , self.targetx+0.0127 )
-        #self.ystart=random.uniform(self.targety-0.0127 , self.targety+0.0127 )
-        # 0.0127 m=0.5in
-        
-        self.xstart=0.7#0.715
-        self.ystart=0.08#0.035
-        self.zstart=0.87#0.95
-        
-        self.targetx=0.7
-        self.targety=0.08
-        self.targetz=0.87
-        
-        
-        self.xcurrent=self.xstart
-        self.ycurrent=self.ystart
-        self.zcurrent=self.zstart
-        self.xyz = [self.xcurrent, self.ycurrent, self.zcurrent]
-        #self.orientation= [0,1,0,0] #quaternion hand pointing down..ish?
-        
-        
-        #rpy2quat  in cairo_planning/geometric/transformation
-        
-        self.orientation= [-0.06,1,0,0] #[0,1,0,0]
-        #self.orientation=(0.012822343810135861, 0.9994838704682953, 0.018943326830012097, 0.022555055786720374)
-        #self.orientation= [rpy2quatV2([0,0,0],degrees=True)]
-        #print("orientation",self.orientation)
-        
-        self.sawyer_robot = SawyerMOD(robot_name="sawyer0",position=[0, 0, 0.8], fixed_base=1)
-        self.sawyerID=self.sawyer_robot.get_simulator_id() #numeric code for robot
-        #print(self.sawyer_robot._arm_dof_indices) #[3, 8, 9, 10, 11, 13, 16]  #these correspond to the links
-        #print(self.sawyer_robot._arm_dof_names)   
-        
-        self.joint_config = self.sawyer_robot.solve_inverse_kinematics(self.xyz,self.orientation) #,target_in_local_coords=False
-        #print(self.joint_config)
-        
-        self.dofindex=[3, 8, 9, 10, 11, 13, 16]
-        for idx, joint_idx in enumerate(self.dofindex):
-            p.resetJointState(self.sawyerID, joint_idx, self.joint_config[idx])
-            p.setJointMotorControl2(self.sawyerID, joint_idx, p.POSITION_CONTROL, targetPosition=self.joint_config[idx], force=100)
-
-#         time.sleep(.4) 
-#         self.sawyer_robot.move_to_joint_pos(self.joint_config)
-#         time.sleep(.4)
-        #print("initial config",self.joint_config)
-        
-        #self.target_truepose=self.sawyer_robot.get_joint_pose_in_world_frame()
-        #print("world frame pose", self.target_truepose)
-
-              
-        for x in self.dofindex:
-            p.enableJointForceTorqueSensor(self.sawyerID,x,enableSensor=1)  #args: bodyID#, jointIndex,enablesensor
-    
-        
-        self.dist=-1
-        
-        if (self.render):
-            p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,1) #display env 
-
-        p.setAdditionalSearchPath(pybullet_data.getDataPath())  # used by loadURDF
     
     def motionselector(self,action):
     
@@ -463,10 +356,9 @@ class MainEnvRL(gym.Env):
         self.xyz = [self.xcurrent, self.ycurrent, self.zcurrent]
         #print("current location",self.xyz,"action",action, )
     
-        self.curr_action_config = self.sawyer_robot.solve_inverse_kinematics(self.xyz,self.orientation,target_in_local_coords=False)
-        self.sawyer_robot.move_to_joint_pos(self.curr_action_config)
-        #time.sleep(.3)
-        
+        self.joint_config2 = self.sawyer_robot.solve_inverse_kinematics(self.xyz,self.orientation,target_in_local_coords=False)
+        self.sawyer_robot.move_to_joint_pos(self.joint_config2)
+        time.sleep(.3)
                 
     def _compute_observation(self):
         
@@ -525,7 +417,7 @@ class MainEnvRL(gym.Env):
             print("RESET! - reward over limit")
         if self._envStepCounter >= stepsPerEpisode:    
             #print("RESET!-env counter at max", "final reward value:",self.currentreward)
-            print("Ep:",self.episodecounter, "Reward:",self.currentreward,"Target:",(self.targetx,self.targety,self.targetz) ," Final Position: ", self.xyz )
+            #print("Ep:",self.episodecounter, "Reward:",self.currentreward,"Target:",(self.targetx,self.targety,self.targetz) ," Final Position: ", self.xyz )
             self.episodecounter=self.episodecounter+1
        
             self.rewardlist.append(self.currentreward)
@@ -533,15 +425,15 @@ class MainEnvRL(gym.Env):
             self.ax1.cla() #clear axes 
             self.ax1.plot(self.rewardlist)
             
-            plt.setp(self.ax1, xlim=(0, 200), ylim=(-10,0))
+            plt.setp(self.ax1, xlim=(0, 200), ylim=(-2.5,0))
 
-            display(self.fig)
+            #display(self.fig)
 
             if len(self.rewardlist)>200:
                 self.rewardlist.pop(0)
                 
             
-            clear_output(wait = True)   #uncomment to clear output at each reset 
+            #clear_output(wait = True)   #uncomment to clear output at each reset 
             
        
 
