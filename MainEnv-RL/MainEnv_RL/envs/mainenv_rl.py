@@ -40,7 +40,7 @@ class MainEnvRL(gym.Env):
     def __init__(self, render=True):
         self._observation = []
         #self.action_space = spaces.Discrete(9)#Generates number between 0 and 9
-        self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
+        self.action_space = spaces.Discrete(6)#Generates number between 0 and 9
 
         #for the moment, action space set to min and max x y and z values to shift at every move. Eventually, add orientation changes!
         #self.action_space = spaces.Box(np.array([-0.01, -0.01, -0.01]), """ x, y, z min """
@@ -90,18 +90,48 @@ class MainEnvRL(gym.Env):
     def step(self, action):
         #self._assign_throttle(action)  #for arm, increment by a small amount (Investigate killing action if Force>20)
         self.motionselector(action)
-#         while self.sawyer_robot.check_if_at_position(self.curr_action_config, .2) is False:
-#             #for multistep in range(100): #step forward 10 steps before observation
-#             #.stepSimulation()
-#             time.sleep(0.4)
-            # we can still check if we violate a torque limit etc and if that happens, we can collect an observation, reward and make sure done is now true so we move onto a new action or terminate the current policy rollout.
-        time.sleep(.3)
+        
+        positioncheckcounter=0
+        while self.sawyer_robot.check_if_at_position(self.curr_action_config, .2) is False:
+            #for multistep in range(100): #step forward 10 steps before observation
+            p.stepSimulation()
+            #positioncheckcounter+=1
+            wrist_jointinfo=p.getJointState(self.sawyerID,16) 
+            wrist_forcetorque = [round(num, 3) for num in wrist_jointinfo[2]]
+            
+            if (#positioncheckcounter==40 or 
+                    wrist_forcetorque[0]<-20 or wrist_forcetorque[0]>20
+                    or wrist_forcetorque[1]<-20 or wrist_forcetorque[1]>20
+                    or wrist_forcetorque[2]>2): #default z axis force is -18. limit of 2 is not a typo!
+                print("action stopped")
+                if wrist_forcetorque[0]<-20 or wrist_forcetorque[0]>20:
+                    print("x axis force limit exceeded at:", wrist_forcetorque[0])
+                if wrist_forcetorque[1]<-20 or wrist_forcetorque[1]>20:
+                    print("y axis force limit exceeded at:", wrist_forcetorque[1])   
+                if  wrist_forcetorque[2]>2:
+                    print("z axis force limit exceeded at:", wrist_forcetorque[2])    
+                    
+                currentjointstate=self.sawyer_robot.get_current_joint_states()
+                fk_pose=self.sawyer_robot.solve_forward_kinematics(currentjointstate[:-2])
+                self.xcurrent=fk_pose[0][0][0]+.114
+                self.ycurrent=fk_pose[0][0][1]-0.02
+                self.zcurrent=fk_pose[0][0][2]+0.12
+                
+                # 
+                break
+                
+             #time.sleep(0.4)
+
+
+
+        # we can still check if we violate a torque limit etc and if that happens, we can collect an observation, reward and make sure done is now true so we move onto a new action or terminate the current policy rollout.
+        #time.sleep(.3)
         self._observation = self._compute_observation()  
         reward = self._compute_reward()
         done = self._compute_done()
         #print("step:", self._envStepCounter, "action:",action, "observation",[self.xcurrent,self.ycurrent,self.zcurrent]," reward",self.currentreward )
         self._envStepCounter += 1
-        self.dist = self.lrf_sensor1.get_reading()
+        
         #dist2 = self.lrf_sensor2.get_reading()
         return np.array(self._observation), reward, done, {}
 
@@ -131,7 +161,7 @@ class MainEnvRL(gym.Env):
         #sim_obj3 = SimObject('hole3', os.path.join(path, '1.15hole.urdf'), (0.69, 0.5, .530),(0,0,0),fixed_base=1)    
         #sim_obj4 = SimObject('c_hole', os.path.join(path, 'C_hole.urdf'),  (0.69, -0.5, .530),(0,0,0),fixed_base=1)
         
-        self.lrf_sensor1 = LaserRangeFinder(position_offset=[0.69, 0.1, .530 ],          
+        self.lrf_sensor = LaserRangeFinder(position_offset=[0.69, 0.1, .530 ],          
                                   orientation_offset=[0, -0.7068252, 0, 0.7073883 ] ,fixed_pose=False)
         
         #for world frame shift testing
@@ -139,23 +169,20 @@ class MainEnvRL(gym.Env):
         #self.testblockID=testblock.get_simulator_id()
         #p.removeBody(sim_obj4ID)
       
-        #self.lrf_sensor.set_range(0,0.0381) #to be just inside hole1
-        self.lrf_sensor1.set_range(0,0.11) 
-        self.lrf_sensor1.set_debug_mode(True) 
+        self.lrf_sensor.set_range(0,0.22)#0.11)  .0381) #to be just inside hole1
+        self.lrf_sensor.set_debug_mode(True) 
     
         self.fig, (self.ax1) = plt.subplots(1,figsize=(8,8))
-        
-        
-        
+
         #print(self.sawyer_robot._arm_dof_indices) #[3, 8, 9, 10, 11, 13, 16]  #these correspond to the links
         #print(self.sawyer_robot._arm_dof_names) 
         
         self._seed()
         
         self.targetx=0.7
-        self.targety=0.08
-        self.targetz=0.87
-        
+        self.targety=0.085
+        self.targetz= 0.789
+    
         self.xstart=random.uniform(self.targetx-(2*0.0127) , self.targetx+0.0127 ) # 0.0127 m=0.5in
         self.ystart=random.uniform(self.targety-(2*0.0127) , self.targety+0.0127 )
         self.zstart=0.87#0.95
@@ -185,6 +212,7 @@ class MainEnvRL(gym.Env):
 
         for x in self.dofindex:
             p.enableJointForceTorqueSensor(self.sawyerID,x,enableSensor=1)  #args: bodyID#, jointIndex,enablesensor
+        self.actionlist=[]
     
     def motionselector(self,action):
     
@@ -202,13 +230,12 @@ class MainEnvRL(gym.Env):
             self.ycurrent=round(self.ycurrent+0.01,3)
         if action==3:  
             self.ycurrent=round(self.ycurrent-0.01,3)
-            
-        """ 
         if action==4:  
-            self.zcurrent+=0.01
+            self.zcurrent=round(self.zcurrent+0.01,3)
         if action==5:  
-            self.zcurrent+=0.01
-        """   
+            self.zcurrent=round(self.zcurrent-0.01,3)   
+        self.actionlist.append(action)
+      
         self.xyz = [self.xcurrent, self.ycurrent, self.zcurrent]
         #print("current location",self.xyz,"action",action, )
     
@@ -228,12 +255,17 @@ class MainEnvRL(gym.Env):
         return [self.xcurrent,self.ycurrent,self.zcurrent]
     
     def _compute_reward(self):
-        #dist = self.lrf_sensor.get_reading()  #distance from laser range finder
+        self.dist = self.lrf_sensor.get_reading()  #distance from laser range finder
         #print("Laser dist=:",dist)
         #return 0.1 - abs(self.vt - self.vd) * 0.005  #+ reweard for standing still  #base this on last state
         
         self.currentreward=0
-        self.currentreward=-1*39.3701*math.sqrt(pow(self.xdifference,2) +pow(self.ydifference,2)+pow(self.zdifference,2))
+        #self.currentreward=-1*39.3701*math.sqrt(pow(self.xdifference,2) +pow(self.ydifference,2)+pow(self.zdifference,2))
+        if self.dist==math.inf:
+                self.currentreward=-10
+        else:
+            self.currentreward=-1*self.dist*39.3701
+        
         
         #self.currentreward=(self.currentreward/5)+1.2
         #print("reward",self.currentreward)
@@ -261,6 +293,7 @@ class MainEnvRL(gym.Env):
         if self._envStepCounter >= stepsPerEpisode:    
             #print("RESET!-env counter at max", "final reward value:",self.currentreward)
             print("Ep:",self.episodecounter, "Reward:",self.currentreward,"Target:",(self.targetx,self.targety,self.targetz) ," Final Position: ", self.xyz )
+            print("action list",self.actionlist)
             self.episodecounter=self.episodecounter+1
        
             self.rewardlist.append(self.currentreward)
