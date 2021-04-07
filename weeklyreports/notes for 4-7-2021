@@ -1,15 +1,22 @@
 
 
 4-7-2021
-Experimented with fixed sim. When Z axis movement was added, target was not able to be reached, as there was adisconnect between the real position, and the commanded position. 
+Experimented with fixed simulator.
 
-Experimented with sparce reward from laser sensor distance, it does appear to get to the hole, 30-50% of the time
+Experimented with sparce reward from laser sensor distance, it does appear to get to the hole, 30-50% of the time when I used large motions
+
+I was able to get 100% success rate for a small period of time using the same "always moving down + x/y motion" from the Inoue paper's "search phase", with 1mm initial offset from target, and 1mm motions in xyz per action.  then, somehow the shoulder gave up every episode. 
+
 
 To do:
-experiment with force feedback to stop episode
-experiment with force feedback to stop motion
-experiment with getting pytrees to work
+Fix the "limp arm" issue when arm gets detects a lot of force at the wrist- move back to previous position?
+get pytrees to work, 
+replicate parts of the Correll lab's existing arm behavior trees. 
+Get LSTM's to work
+Finish presentation for committee members (MacCurdy and Jayaram) which is on monday at 9:30am. 
  
+
+Other news- semi confidential- we made it through the first cutoff round for the battlebots application!
 
 --------------
 3-31-2021

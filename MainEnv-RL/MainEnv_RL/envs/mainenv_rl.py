@@ -40,7 +40,7 @@ class MainEnvRL(gym.Env):
     def __init__(self, render=True):
         self._observation = []
         #self.action_space = spaces.Discrete(9)#Generates number between 0 and 9
-        self.action_space = spaces.Discrete(6)#Generates number between 0 and 9
+        self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
 
         #for the moment, action space set to min and max x y and z values to shift at every move. Eventually, add orientation changes!
         #self.action_space = spaces.Box(np.array([-0.01, -0.01, -0.01]), """ x, y, z min """
@@ -52,9 +52,7 @@ class MainEnvRL(gym.Env):
 
         self.observation_space = spaces.Box(np.array([-5, -5, -5]), 
                                             np.array([5, 5, 5])) # pitch, gyro, com.sp.
-        
-        
-        
+
         
         use_ros = False
         use_real_time = True #True
@@ -66,7 +64,7 @@ class MainEnvRL(gym.Env):
         p.setPhysicsEngineParameter(solverResidualThreshold=1e-30)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())  # used by loadURDF
         p.setGravity(0,0,-9.81)
-        self.fig, (self.ax1) = plt.subplots(1,figsize=(8,8))
+        self.fig, (self.ax1) = plt.subplots(1,figsize=(8,16)) # was 8,8
         #p.setTimeStep(0.01) # sec
         
         #p.setPhysicsEngineParameter(numSolverIterations=100, numSubSteps=10) #numSolverIterations=100, numSubSteps=10) #  #make physics more accurate by iterating by smaller steps?
@@ -103,6 +101,7 @@ class MainEnvRL(gym.Env):
                     wrist_forcetorque[0]<-20 or wrist_forcetorque[0]>20
                     or wrist_forcetorque[1]<-20 or wrist_forcetorque[1]>20
                     or wrist_forcetorque[2]>2): #default z axis force is -18. limit of 2 is not a typo!
+                """
                 print("action stopped")
                 if wrist_forcetorque[0]<-20 or wrist_forcetorque[0]>20:
                     print("x axis force limit exceeded at:", wrist_forcetorque[0])
@@ -110,13 +109,23 @@ class MainEnvRL(gym.Env):
                     print("y axis force limit exceeded at:", wrist_forcetorque[1])   
                 if  wrist_forcetorque[2]>2:
                     print("z axis force limit exceeded at:", wrist_forcetorque[2])    
-                    
+                """    
                 currentjointstate=self.sawyer_robot.get_current_joint_states()
                 fk_pose=self.sawyer_robot.solve_forward_kinematics(currentjointstate[:-2])
                 self.xcurrent=fk_pose[0][0][0]+.114
                 self.ycurrent=fk_pose[0][0][1]-0.02
                 self.zcurrent=fk_pose[0][0][2]+0.12
                 
+                #self.xyz = [self.xcurrent, self.ycurrent, self.zcurrent]
+                #print("current location",self.xyz,"action",action, )
+                #self.curr_action_config = self.sawyer_robot.solve_inverse_kinematics(self.xyz,self.orientation,target_in_local_coords=False)
+                #self.sawyer_robot.move_to_joint_pos(self.curr_action_config)
+                self.sawyer_robot.move_to_joint_pos(currentjointstate)
+                self.dofindex=[3, 8, 9, 10, 11, 13, 16]
+                for idx, joint_idx in enumerate(self.dofindex):
+                    p.resetJointState(self.sawyerID, joint_idx, self.joint_config[idx])
+                    p.setJointMotorControl2(self.sawyerID, joint_idx, p.POSITION_CONTROL, targetPosition=self.joint_config[idx], force=100)
+                p.stepSimulation()
                 # 
                 break
                 
@@ -169,7 +178,7 @@ class MainEnvRL(gym.Env):
         #self.testblockID=testblock.get_simulator_id()
         #p.removeBody(sim_obj4ID)
       
-        self.lrf_sensor.set_range(0,0.22)#0.11)  .0381) #to be just inside hole1
+        self.lrf_sensor.set_range(0,0.11)#0.11)  .0381) #to be just inside hole1
         self.lrf_sensor.set_debug_mode(True) 
     
         self.fig, (self.ax1) = plt.subplots(1,figsize=(8,8))
@@ -183,8 +192,10 @@ class MainEnvRL(gym.Env):
         self.targety=0.085
         self.targetz= 0.789
     
-        self.xstart=random.uniform(self.targetx-(2*0.0127) , self.targetx+0.0127 ) # 0.0127 m=0.5in
-        self.ystart=random.uniform(self.targety-(2*0.0127) , self.targety+0.0127 )
+        #self.xstart=random.uniform(self.targetx-(.5*0.0127) , self.targetx+(0.5*0.0127) ) # 0.0127 m=0.5in
+        #self.ystart=random.uniform(self.targety-(.5*0.0127) , self.targety+(0.5*0.0127) )
+        self.xstart=random.uniform(self.targetx-(1*.001) , self.targetx+(1*.001) ) # 0.0127 m=0.5in
+        self.ystart=random.uniform(self.targety-(1*.001) , self.targety+(1*.001) )
         self.zstart=0.87#0.95
         
         self.xcurrent=self.xstart
@@ -222,18 +233,36 @@ class MainEnvRL(gym.Env):
         
         #truepose=self.sawyer_robot.get_joint_pose_in_world_frame()
         #print("Truepose",truepose[0])
+        
+        
+        """
         if action==0:  
-            self.xcurrent=round(self.xcurrent+ 0.01,3)
+            self.xcurrent=round(self.xcurrent+ 0.005,3)
         if action==1:  
-            self.xcurrent=round(self.xcurrent- 0.01,3)
+            self.xcurrent=round(self.xcurrent- 0.005,3)
         if action==2:  
-            self.ycurrent=round(self.ycurrent+0.01,3)
+            self.ycurrent=round(self.ycurrent+0.005,3)
         if action==3:  
-            self.ycurrent=round(self.ycurrent-0.01,3)
+            self.ycurrent=round(self.ycurrent-0.005,3)
         if action==4:  
-            self.zcurrent=round(self.zcurrent+0.01,3)
+            self.zcurrent=round(self.zcurrent+0.005,3)
         if action==5:  
-            self.zcurrent=round(self.zcurrent-0.01,3)   
+            self.zcurrent=round(self.zcurrent-0.005,3)      
+        """   
+        if action==0:  
+            self.xcurrent=round(self.xcurrent+ 0.001,3)
+            self.zcurrent=round(self.zcurrent-0.001,3) 
+        if action==1:  
+            self.xcurrent=round(self.xcurrent- 0.001,3)
+            self.zcurrent=round(self.zcurrent-0.001,3) 
+        if action==2:  
+            self.ycurrent=round(self.ycurrent+0.001,3)
+            self.zcurrent=round(self.zcurrent-0.001,3) 
+        if action==3:  
+            self.ycurrent=round(self.ycurrent-0.001,3)   
+            self.zcurrent=round(self.zcurrent-0.001,3) 
+            
+            
         self.actionlist.append(action)
       
         self.xyz = [self.xcurrent, self.ycurrent, self.zcurrent]
@@ -287,12 +316,12 @@ class MainEnvRL(gym.Env):
     def _compute_done(self):
         #cubePos, _ = p.getBasePositionAndOrientation(self.botId)
         #return cubePos[2] < 0.15 or self._envStepCounter >= 1500  #default
-        stepsPerEpisode=20 #did 20 before
-        if self.currentreward > 99:
-            print("RESET! - reward over limit")
+        stepsPerEpisode=80 #did 20 before
+        #if self.currentreward > -0.5:
+        #    print("RESET! - reward over limit")
         if self._envStepCounter >= stepsPerEpisode:    
             #print("RESET!-env counter at max", "final reward value:",self.currentreward)
-            print("Ep:",self.episodecounter, "Reward:",self.currentreward,"Target:",(self.targetx,self.targety,self.targetz) ," Final Position: ", self.xyz )
+            print("Ep:",self.episodecounter,"Dist (m)",self.dist, " Reward:",self.currentreward,"Target:",(self.targetx,self.targety,self.targetz) ," Final Position: ", self.xyz )
             print("action list",self.actionlist)
             self.episodecounter=self.episodecounter+1
        
@@ -301,11 +330,11 @@ class MainEnvRL(gym.Env):
             self.ax1.cla() #clear axes 
             self.ax1.plot(self.rewardlist)
             
-            plt.setp(self.ax1, xlim=(0, 200), ylim=(-10,0))
+            plt.setp(self.ax1, xlim=(0, 500), ylim=(-10,0))
 
             display(self.fig)
 
-            if len(self.rewardlist)>200:
+            if len(self.rewardlist)>500:
                 self.rewardlist.pop(0)
                 
             
@@ -316,7 +345,7 @@ class MainEnvRL(gym.Env):
         #print(self.currentreward,"Target:",(self.targetx,self.targety,self.targetz) ," Current Position: ",self.xyz,)    
         
         
-        return self.currentreward > 100 or self._envStepCounter >= stepsPerEpisode
+        return self.currentreward > -0.5 or self._envStepCounter >= stepsPerEpisode
     
     
 
