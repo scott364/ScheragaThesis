@@ -1,3 +1,6 @@
+use actual end effector xyz to check if we have reached a position- replace line 104
+attempt- if we have a high torque from and action, automatically do the opposite action 
+find someone from any of the CU labs who has experience with openaibaselines/stable baselinse
 
 
 4-7-2021
@@ -17,6 +20,8 @@ Finish presentation for committee members (MacCurdy and Jayaram) which is on mon
  
 
 Other news- semi confidential- we made it through the first cutoff round for the battlebots application!
+
+modnay/thuyrsdays are better. 
 
 --------------
 3-31-2021
