@@ -2,10 +2,8 @@
 <!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
      Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
-<robot
-  name="1in rectangular block_C.SLDPRT">
-  <link
-    name="1in rectangular block_C.SLDPRT">
+<robot name="1in rectangular block_C.SLDPRT">
+  <link concave="yes" name="1in rectangular block_C.SLDPRT">
     <inertial>
       <origin
         xyz="6.8012E-20 1.19697510403163E-18 0.0381"
@@ -36,7 +34,7 @@
           filename="package://1in rectangular block_C.SLDPRT/textures/" />
       </material>
     </visual>
-    <collision>
+    <collision concave="yes">
       <origin
         xyz="0 0 0"
         rpy="1.5707963267949 0 0" />
