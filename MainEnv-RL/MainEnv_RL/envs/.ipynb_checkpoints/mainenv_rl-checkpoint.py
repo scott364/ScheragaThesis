@@ -18,7 +18,6 @@ from cairo_simulator.core.simulator import Simulator, SimObject
 from cairo_simulator.devices.manipulators import Sawyer
 from cairo_simulator.devices.sensors import LaserRangeFinder
 from cairo_planning.geometric.transformation import rpy2quatV2
-from scipy.spatial.transform import Rotation as R
 
 from .manipulatorsMOD import SawyerMOD
 from .utils import load_configuration, save_config_to_configuration_file, manual_control, create_cuboid_obstacle
@@ -39,19 +38,19 @@ class MainEnvRL(gym.Env):
         'video.frames_per_second' : 50}
     
 
-    def __init__(self, render=True,totalepisodes=100,phase=1): #phase 1= Search phase  Phase 2= insertion phase
+    def __init__(self, render=True,totalepisodes=100):
         self._observation = []
-       
-    
-        if phase==1:
-            self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
-            self.observation_space = spaces.Box(np.array([-1000,-1000,-1000,-1000,-1000, -1, -1]), 
-                                                np.array([1000,1000,1000,1000,1000,1, 1])) # pitch, gyro, com.sp.
-        if phase==2:
-            
-            self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
-            self.observation_space = spaces.Box(np.array([-1000,-1000,-1000,-1000,-1000, -1, -1]), 
-                                                np.array([1000,1000,1000,1000,1000,1, 1])) # pitch, gyro, com.sp.
+        #self.action_space = spaces.Discrete(9)#Generates number between 0 and 9
+        self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
+
+      
+        #self.action_space = spaces.Box(np.array([-0.01, -0.01, -0.01]), """ x, y, z min """
+        #                                    np.array([0.01, 0.01, 0.01])) # x, y, z max
+        
+
+        self.observation_space = spaces.Box(np.array([-1000,-1000,-1000,-1000,-1000, -1, -1]), 
+                                            np.array([1000,1000,1000,1000,1000,1, 1])) # pitch, gyro, com.sp.
+
         
         use_ros = False
         self.render=render
@@ -243,38 +242,35 @@ class MainEnvRL(gym.Env):
         #print("Truepose",truepose[0]
         movedist=0.001    #0.001
         
-        if phase ==1:
-            if action==0:  
-                self.xcurrent=round(self.xcurrent+ movedist,3)
-                self.zcurrent=round(self.zcurrent-movedist,3) 
-            if action==1:  
-                self.xcurrent=round(self.xcurrent- movedist,3)
-                self.zcurrent=round(self.zcurrent-movedist,3) 
-            if action==2:  
-                self.ycurrent=round(self.ycurrent+movedist,3)
-                self.zcurrent=round(self.zcurrent-movedist,3) 
-            if action==3:  
-                self.ycurrent=round(self.ycurrent-movedist,3)   
-                self.zcurrent=round(self.zcurrent-movedist,3) 
-                
-        if phase ==2: 
-            quatcurrent=self.orientation
+        """  
+        if action==0:  
+            self.xcurrent=round(self.xcurrent+ movedist,3)
+        if action==1:  
+            self.xcurrent=round(self.xcurrent- movedist,3)
+        if action==2:  
+            self.ycurrent=round(self.ycurrent+movedist,3)
+        if action==3:  
+            self.ycurrent=round(self.ycurrent-movedist,3)
+        if action==4:  
+            self.zcurrent=round(self.zcurrent+movedist,3)
+        if action==5:  
+            self.zcurrent=round(self.zcurrent-movedist,3)      
+        """   
+        
+        if action==0:  
+            self.xcurrent=round(self.xcurrent+ movedist,3)
+            self.zcurrent=round(self.zcurrent-movedist,3) 
+        if action==1:  
+            self.xcurrent=round(self.xcurrent- movedist,3)
+            self.zcurrent=round(self.zcurrent-movedist,3) 
+        if action==2:  
+            self.ycurrent=round(self.ycurrent+movedist,3)
+            self.zcurrent=round(self.zcurrent-movedist,3) 
+        if action==3:  
+            self.ycurrent=round(self.ycurrent-movedist,3)   
+            self.zcurrent=round(self.zcurrent-movedist,3) 
+         
             
-            if action==0:  
-                self.zcurrent=round(self.zcurrent-movedist,3) 
-            if action==1:  
-                self.zcurrent=round(self.zcurrent-movedist,3) 
-                
-            if action==2:  
-                self.zcurrent=round(self.zcurrent-movedist,3) 
-                
-            if action==3:   
-                self.zcurrent=round(self.zcurrent-movedist,3) 
-                
-            if action==4:   
-                self.zcurrent=round(self.zcurrent-movedist,3)      
-                
-                
         self.actionlist.append(action)
       
         self.xyz = [self.xcurrent, self.ycurrent, self.zcurrent]
@@ -327,6 +323,8 @@ class MainEnvRL(gym.Env):
       
         self.lrf_sensor.set_range(0,0.15)#0.11)  .0381) #to be just inside hole1
         self.lrf_sensor.set_debug_mode(True) 
+    
+        
 
         #print(self.sawyer_robot._arm_dof_indices) #[3, 8, 9, 10, 11, 13, 16]  #these correspond to the links
         #print(self.sawyer_robot._arm_dof_names) 
@@ -339,25 +337,18 @@ class MainEnvRL(gym.Env):
     
         self.xstart=random.uniform(self.targetx-(.5*0.0127) , self.targetx+(0.5*0.0127) ) # 0.0127 m=0.5in
         self.ystart=random.uniform(self.targety-(.5*0.0127) , self.targety+(0.5*0.0127) )   #1*.001
-        self.zstart=0.82#0.87#0.95
+        #self.xstart=self.targetx
+        #self.ystart=self.targety
         
-        #self.orientation= [0,1,0,0] 
-        self.quatA_start=0 #rpy2quat  in cairo_planning/geometric/transformation
-        self.quatB_start=1
-        self.quatC_start=0
-        self.quatD_start=0
+        #print("start location",self.xstart,self.ystart)
+        self.zstart=0.82#0.87#0.95
         
         self.xcurrent=self.xstart
         self.ycurrent=self.ystart
         self.zcurrent=self.zstart
-        self.quatA_current=self.quatA_start
-        self.quatB_current=self.quatB_start
-        self.quatC_current=self.quatC_start
-        self.quatD_current=self.quatD_start
-        
         self.xyz = [self.xcurrent, self.ycurrent, self.zcurrent]
-        self.orientation= [self.quatA_current,self.quatB_current,self.quatC_current,self.quatD_current]  
-        
+
+        self.orientation= [0,1,0,0]#[-0.06,1,0,0] #[0,1,0,0] #rpy2quat  in cairo_planning/geometric/transformation
         self.sawyer_robot = SawyerMOD(robot_name="sawyer0",position=[0, 0, 0.8], fixed_base=1)
         self.sawyerID=self.sawyer_robot.get_simulator_id() #numeric code for robot
         #print(self.sawyer_robot._arm_dof_indices) #[3, 8, 9, 10, 11, 13, 16]  #these correspond to the links
@@ -387,6 +378,12 @@ class MainEnvRL(gym.Env):
         y_pose=current_pose[0][0][1]+self.yoffset#-0.02#-0.02
         z_pose=current_pose[0][0][2]+self.zoffset#+0.13#+0.13 #.1
         #print("corrected starting xyz pose from FK:",x_pose,y_pose,z_pose)
+        
+        
+#         time.sleep(.4) 
+#         self.sawyer_robot.move_to_joint_pos(self.joint_config)
+#         time.sleep(.4)
+        #print("initial config",self.joint_config)
 
         for x in self.dofindex:
             p.enableJointForceTorqueSensor(self.sawyerID,x,enableSensor=1)  #args: bodyID#, jointIndex,enablesensor

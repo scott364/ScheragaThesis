@@ -80,12 +80,21 @@ assets/sawyer_description/meshes/sawyer_pv/pedestal.DAE
 assets/sawyer_description/meshes/sawyer_pv/pedestal.STL
 assets/sawyer_description/meshes/smart_tool_plate/smart_tool_plate.DAE
 assets/sawyer_description/meshes/smart_tool_plate/smart_tool_plate.STL
+assets/sawyer_description/urdf/1in rectangular block_C.SLDPRT.zip
+assets/sawyer_description/urdf/combined5.urdf
 assets/sawyer_description/urdf/sawyer.urdf.xacro
 assets/sawyer_description/urdf/sawyer_base.gazebo.xacro
 assets/sawyer_description/urdf/sawyer_base.urdf.xacro
 assets/sawyer_description/urdf/sawyer_electric_gripper.urdf.xacro
 assets/sawyer_description/urdf/sawyer_static.urdf
+assets/sawyer_description/urdf/sawyer_static_blockcombine.urdf
+assets/sawyer_description/urdf/sawyer_static_classic.urdf
 assets/sawyer_description/urdf/update_sawyer_model.sh
+assets/sawyer_description/urdf/.ipynb_checkpoints/sawyer_base.urdf-checkpoint.xacro
+assets/sawyer_description/urdf/.ipynb_checkpoints/sawyer_static_blockcombine-checkpoint.urdf
+assets/sawyer_description/urdf/1in rectangular block_C.SLDPRT/manifest.xml
+assets/sawyer_description/urdf/1in rectangular block_C.SLDPRT/meshes/1in rectangular block_C.SLDPRT.STL
+assets/sawyer_description/urdf/1in rectangular block_C.SLDPRT/urdf/1in rectangular block_C.SLDPRT.urdf
 assets/sawyer_description/urdf/connector_plate/connector_plate.xacro
 assets/sawyer_description/urdf/controller_box/controller_box.urdf
 assets/sawyer_description/urdf/electric_gripper/example_end_effector.urdf.xacro
@@ -147,5 +156,4 @@ src/cairo_simulator/core/utils.py
 src/cairo_simulator/devices/__init__.py
 src/cairo_simulator/devices/ground_vehicles.py
 src/cairo_simulator/devices/manipulators.py
-src/cairo_simulator/devices/manipulatorsMOD.py
 src/cairo_simulator/devices/sensors.py
