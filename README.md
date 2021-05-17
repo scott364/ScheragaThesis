@@ -2,24 +2,40 @@
 
 Files for Scott Scheraga's Master's Thesis work
 
-env set up:
-current:
+To set up environment: 
+
 conda create -n thesis -c conda-forge tensorflow-gpu=1.15
 
 
 conda install python=3.6.9
+
 conda install jupyter
 
 pip install gym  pybullet
+
 pip install 
 
 sudo apt-get update && sudo apt-get install cmake libopenmpi-dev python3-dev zlib1g-dev
+
 pip install stable-baselines
 
+go into cairo_simulator folder
+
+pip install -e ./
+
+
+go into baselines folder
+
+pip install -e .
+
+cd MainEnv_RL
+
+pip install -e .
 
 
 ------------------------------------------
-old:
+Old:
+
 conda install python=3.6.9
 
 conda create --name thesis python=3.6.9
