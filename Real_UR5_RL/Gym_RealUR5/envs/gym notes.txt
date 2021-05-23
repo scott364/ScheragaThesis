@@ -1,0 +1,6 @@
+https://gerardmaggiolino.medium.com/creating-openai-gym-environments-with-pybullet-part-1-13895a622b24
+
+https://gerardmaggiolino.medium.com/creating-openai-gym-environments-with-pybullet-part-2-a1441b9a4d8e
+
+https://github.com/openai/gym/blob/master/docs/creating-environments.md
+
