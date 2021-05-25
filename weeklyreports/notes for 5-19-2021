@@ -1,0 +1,215 @@
+5-19-2021
+
+Moved the UR5 to the lab! Got my software packages and everything up and running on James Watson's PC that he is temporarily posting next to the robot. James is working on data piping to train the RL policies outside of the smarthand, and on James's tower computer
+
+Plusone robotics
+Dan Grollman - He is a friend of the lab and knows Brad Hayes
+
+
+
+5-12-2021
+
+Getting back into research. Played around with behavior trees and some of the Robotic materials behavior trees outside of the UR5 robot.  I will be helping James Watson bring the UR5 to campus today, and I'll have to duck out of this meeting after myhj update. 
+
+ I also worked towards simulating the Inoue paper's "jamming" policy, with now using correct quaterion to but in initial testing with keyboard inputs, it seems like it is not the most acurate collisiion detection. May be related to the mesh, but pybullets wireframe view shows a very strange wireframe for the block. 
+
+For lab equipment, I'd like a keyboard and monitor or two, but I am not sure what is currently available. 
+
+
+
+
+4-28-2021
+
+Currently in final projects mode. No real progress on my research
+I will not be able to make movo subgroup tomorrow. Got very lucky that last week in that class was cancelled.
+
+Nicholaus said he and james are bringing the UR5 robot arm back to campus. No info on timeline. I am honestly concered that as James Watson is also using the robot a lot, he and I may eventually have conflicts for "robot time".  RoboticMaterials's specific behavior trees  I would like a dedicated desktop for lab.  
+
+
+
+
+4-21-2021
+Got LSTM's to work in a custom network, by using Proximal Policy
+Optimization instead of deep q learning. the policy now accuratly simulates the Inoue paper! Observation space is the forward kinematics xyz position,  Apparently the Stable Baselines deep q learning implementation does not allow for recurrent networks. My policy is really successfull!
+
+Need to switch to the actual UR5 robot and integrate pytrees. 
+
+otherwise, slammed with work for my class, but it seems like my final project is due on the 29th, so that is 1-2 extra weeks to work on research!
+
+4-14-2021
+
+use actual end effector xyz to check if we have reached a position- replace line 104
+attempt- if we have a high torque from and action, automatically do the opposite action 
+find someone from any of the CU labs who has experience with openaibaselines/stable baselinse
+
+
+4-7-2021
+Experimented with fixed simulator.
+
+Experimented with sparce reward from laser sensor distance, it does appear to get to the hole, 30-50% of the time when I used large motions
+
+I was able to get 100% success rate for a small period of time using the same "always moving down + x/y motion" from the Inoue paper's "search phase", with 1mm initial offset from target, and 1mm motions in xyz per action.  then, somehow the shoulder gave up every episode. 
+
+
+To do:
+Fix the "limp arm" issue when arm gets detects a lot of force at the wrist- move back to previous position?
+get pytrees to work, 
+replicate parts of the Correll lab's existing arm behavior trees. 
+Get LSTM's to work
+Finish presentation for committee members (MacCurdy and Jayaram) which is on monday at 9:30am. 
+ 
+
+Other news- semi confidential- we made it through the first cutoff round for the battlebots application!
+
+modnay/thuyrsdays are better. 
+
+--------------
+3-31-2021
+Carl was able to help fix the sim. Full reset of robot every env reset. 
+Multiple small observations, and only output an observation to the network at the end of each motion. end of each motion will occur either when force limit exceeded or destination is reached. 
+
+--------------
+3-24-2021
+
+Got rough DQN and DQN + prioritized experience replay to learn to head to a target on the xy plane both a common starting location and random locations
+dense rewards: -1*magnitude of distance to target
+action space: +/- x or y
+observations space:  tried both x and y distances to target and current x and y position
+
+Having a large issue with  solveinversekinematics not moving the gripper to intended locations. When I put an object at an xyz coordinate, putting the same coordinate into solveinversekinematics, it goes elsewhere. Also, using the same orientation quaternion changes in both my original keyboard control code and the RL environment result in different orientation chagnes 
+
+Also need to solve how to speed up simulation. Sim needs time for arm to move from one location to another with this command:
+
+self.joint_config2 = self.sawyer_robot.solve_inverse_kinematics(self.xyz,self.orientation)
+self.sawyer_robot.move_to_joint_pos(self.joint_config2)
+
+Is there a faster way??
+
+Having a large issue getting openai baselines' lstm network generation function to work without errors. Experiemented with generating a network with keras, and trying to relearn tensorflow keras. No luck so far. 
+
+starting to look into StableBaselines instead of openai baselines..as some reddit posts say their code has been known to break
+
+per
+make a classififer- 
+
+
+#rpy2quat  in cairo_planning/geometric/transformation
+watch quaternion video!!!!
+
+Carl will work on move to joint pos
+
+I need to work on behavior trees stuff, implement stable baselines instead of openai baselines to get lstm to work, rpy to quat to work in the keyboard code
+
+
+
+________________________________
+
+3-17-2021
+start from same position- learn to move to goal
+
+- set up random start position on reset 
+
+write project workshop instread of paper talk 
+
+instead of 1:1 meetings- instead have group meetings
+
+irb forms?
+________________________________
+3-3-2021
+Resolved issues with relative import statements, as files wouldnt import correctly 
+
+Resolved issue where env took 1-2 seconds to instantiate at each refresh because of the saywer model. Learned to not use p.resetSimulation(), and instead, instantiate the sawyer once, and p.resetJointState() at each referesh. To ensure RL system worked, I did p.removebody() on the segway modelm, and reinstantiated it each each reset. 
+
+Figured out how to run non-graphical mode, which seems to run faster!
+-- 
+still exploring implmenenting motion in environment.
+Plan for rewards:
+-Distance to table surface
+
+To copy Inoue 2017 Deep Reinforcement Learning for High Precision Assembly Tasks:
+Two stage policy:
+Search:  the  robot  places  the  peg  center  within  theclearance region of the hole center
+Insertion:  the  robot  adjusts  the  orientation  of  the  pegwith respect to the hole orientation and pushes the pegto the desired position
+
+So, stage 1- xy distance (parallel to table surface) to true goal, and z distance to some small height above target
+stage 2- laser rangefinder (in the hole) distance output
+
+________________________________
+
+2-24-2021
+
+Got balancebot pybullet gym environment to run and render properly. Balancebot was a 3d party demo and its syntax wasn't up to date with OpenAI baseline's current function definitions. Balancebot successfully balances after 260 episodes. Still learning the in's and outs of the balancebot example. I am trying to keep close to the OpenAI baseline's environment standards, to allow for easier switching later on to other RL algorithms like LSTM's ,etc. 
+
+Big issue I still need to solve:  Force limiting for the entire robot.The Robotic Materials lab's UR5 can do this in real life.  Currently, simulated robot is limited to 70N at each joint, :
+
+
+for i, j_idx in enumerate(joints_list):
+ p.setJointMotorControl2(self._simulator_id, j_idx, p.POSITION_CONTROL,
+                                    target_position[i], target_velocity[i], 						maxVelocity=target_velocity[i],force= 70) 
+
+
+ however, it still applies 250+ N (seen at the wrist sensor) to the table moving in straight lines away from the origin, skidding the red block into the goal, unrealistically. Is there a way to check at each timestep that if the force is above a maximum, and stop the move_to_joint_pos
+
+advisor meeting notes:
+reward based on:
+
+state-action , state  
+
+put force into state space
+
+r(s,as')
+
+state space in inclcuids current and previous forces'
+
+
+sean humbert +  rensshaler? 
+
+nicholaus +heckman  has a courtesy appt
+
+process_trajectory_queues and estop may be a way to stop actions if force>limit
+________________________________
+2-10-2021
+Finally figured out how to attach the block to the arm. Turns out there were issues with the URDF file's 
+file references being relative to the folder the URDF file was in. 
+
+Created a Force+Torque "rolling plot" visualizer. 
+Got LaserRangeFinder to work for initial success detection. Need to figure out how to position it vertically. Changing the Orientation offset quaternion doesnt seem to have an effect/
+
+Current goals:
+- enable moving with X force
+-Checking if gripper at goal- change orientation of laserscanner!
+
+-start to implement DQN
+
+--look into changeing step size to match real sesnor
+
+_______________________
+2-3-2021
+Force/Torque feedback now works.
+end effector Roll/pitch/yaw works
+Setting camera angles works 
+I discovered my "hole" objects didn't have holes in the collision mesh. had to enable them in the urdf file. 
+
+Investigated methods of locking red block to arm:
+
+Initially attempted to combine using joinUrdf, initially appeared too complicated
+
+Used CreateConstraint, but the constrained shape appears to "drag" behind gripper,
+and block can get stuck outside of grippers entirely. 
+Played around with p.setPhysicsEngineParameter(numSolverIterations=100, numSubSteps
+to increase accuracy. I think it does, but if variables are too high- system is unstable. random things occur.
+
+Investigated multibody, but it only appears to  work for primitives-
+createCollisionShape- spheres, boxes, and meshes from .obj files
+
+Potential solutions-maybe there is a way to incorporate friction or damping better 
+with createConstraint? There are a lot of settings, I maxed many of them out with little effect. 
+
+Or- possibly joinURDFs to integrate block into the arm's geometry.
+
+or enable btGeneric6DofConstraint from Bullet into Pybullet?
+
+
+
+
+
