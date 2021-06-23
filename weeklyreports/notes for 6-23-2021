@@ -2,9 +2,11 @@
 I've been working on the communication architecture between the UR5's jetson nano and the computer tower, and learning to use the python socket library. 
 
 The current architecture has the jetson nano as the command unit, running the behavior trees, and the computer tower holding and training the reinforcement learning policies. 
-At each timestep, the jetson nano sends the arm's xyz roll/pitch/yaw
+At each timestep, the jetson nano sends the arm's xyz roll/pitch/yaw data to the tower, and the optoforce wrist force/torque sensor sends to the tower, all over XMLRPC, that James has been working on.
 
-XMLRPC
+I have been successfully using the python socket library to send small messages from the tower to the jetson nano, which represent discrete outputs from the RL policy. At the moment, its just my keyboard commands, but it is decent progress. 
+
+
 
 6-16-2021
 Pretty caught up with other work. Went camping this weekend. Saw a green snake, but I didn't run into any bears.  From Christine's recommendation, I signed up for the Endurance Phd sessions, and made the big call that my work on battlebots was kind of taking over my life, and when I joined the team I intendend to be a mechanical supervisor role, and engineer of only some components, I ended up being basically the entire mechanical engineering department of the team, not by choice. I was working basically fulltime on the battlebot design all last week, with the project still falling behind, when my thesis project and getting research papers out are the priority. Had a chat with the battlebots team, and we are now going to be focusing on a later event. Found a roomate.
