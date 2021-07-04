@@ -6,7 +6,7 @@ from remote_FT_client import RemoteFTclient
 from time import sleep
 
 HOST2 = '192.168.0.103'
-PORT2= 65460
+PORT2= 65466
 
 FTclient = RemoteFTclient( '192.168.0.103', 10000 )
 print( FTclient.prxy.system.listMethods() )
@@ -55,6 +55,7 @@ try:
             data1=inputstring.encode('ascii')    
             sock.sendall(data1)
         if (inputstring=='end'):
+            print('end episode')
             break
         """
         data = sock.recv(16)
@@ -104,5 +105,5 @@ try:
     
 finally:
     
-    print('closing socket')
+    print('closing DC socket')
     sock.close()

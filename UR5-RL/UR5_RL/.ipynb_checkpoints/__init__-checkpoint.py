@@ -1,12 +1,12 @@
 from gym.envs.registration import register
  
 register(
-    id='real-ur5-v0',
+    id='ur5-rl-v0',
     #entry_point='balance_bot.envs:BalancebotEnv',
-    entry_point='Gym_RealUR5.envs:UR5_RL_0',
+    entry_point='UR5_RL.envs:UR5Env0',
 )
 register(
-    id='real-ur5-v1',
+    id='ur5-rl-v1',
     #entry_point='balance_bot.envs:BalancebotEnv',
-    entry_point='Gym_RealUR5.envs:UR5_RL_1',
+    entry_point='UR5_RL.envs:UR5Env1',
 )

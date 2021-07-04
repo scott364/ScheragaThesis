@@ -17,7 +17,7 @@ from IPython.display import display, clear_output
 import random
 
 #class BalancebotEnv(gym.Env):
-class UR5_RL_0(gym.Env):
+class UR5Env1(gym.Env):
     #metadata = {
     #   'render.modes': ['human', 'rgb_array'],
     #    'video.frames_per_second' : 50}
