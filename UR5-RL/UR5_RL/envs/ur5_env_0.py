@@ -23,7 +23,8 @@ from scipy.spatial.transform import Rotation as R
 from remote_FT_client import RemoteFTclient
 from time import sleep
 
-
+HOST2 = '192.168.0.103'
+PORT2= 65481
 
 FTclient = RemoteFTclient( '192.168.0.103', 10000 )
 print( FTclient.prxy.system.listMethods() )
@@ -45,8 +46,7 @@ def rpy2rot(rpy, degrees=False):
     return R.from_euler('xyz', rpy, degrees=degrees).as_matrix()
 
 # Create a TCP/IP socket
-HOST2 = '192.168.0.103'
-PORT2= 65462
+
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_address_DC = (HOST2, PORT2)# Connect the socket to the port where the server is listening
 print('DC socket connecting to {} port {}'.format(*server_address_DC))
@@ -64,7 +64,7 @@ class UR5Env0(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'],'video.frames_per_second' : 50}   #not sure if this is needed
     
 
-    def __init__(self,totalepisodes=100):
+    def __init__(self,totalepisodes=100,StepsPerEpisode=10):
         self._observation = []
         #self.action_space = spaces.Discrete(9)#Generates number between 0 and 9
         self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
@@ -77,8 +77,8 @@ class UR5Env0(gym.Env):
         self.observation_space = spaces.Box(np.array([-1000,-1000,-1000,-1000,-1000, -40, -40,-40]), 
                                             np.array([1000,1000,1000,1000,1000,40, 40,40])) # 6 forcetorque, xyz pose
         """
-        self.observation_space = spaces.Box(np.array([-40, -40]), 
-                                            np.array([40, 40])) # 6 forcetorque, xy pose
+        self.observation_space = spaces.Box(np.array([-30, -30]), 
+                                            np.array([30, 30])) # 6 forcetorque, xy pose
                                                       
                              
                                                       
@@ -91,7 +91,7 @@ class UR5Env0(gym.Env):
 
         """
         self.totalepisodes=totalepisodes
-
+        self.StepsPerEpisode=StepsPerEpisode
 
         self.fig, (self.ax1) = plt.subplots(1,figsize=(7,7)) # was 8,8
 
@@ -110,7 +110,7 @@ class UR5Env0(gym.Env):
     def step(self, action):
 
         # we can still check if we violate a torque limit etc and if that happens, we can collect an observation, reward and make sure done is now true so we move onto a new action or terminate the current policy rollout.
-        
+        self.motionselector(action)
         self._observation = self._compute_observation()  
         reward = self._compute_reward()
         done = self._compute_done()
@@ -126,17 +126,20 @@ class UR5Env0(gym.Env):
     
         if action==0:  
             inputstring='h'
+            #print("action taken:", inputstring) 
         if action==1:  
             inputstring='k'
+            #print("action taken:", inputstring) 
         if action==2:  
             inputstring='u'
+            #print("action taken:", inputstring) 
         if action==3:  
             inputstring='j'
-         
+            #print("action taken:", inputstring) 
         data1=inputstring.encode('ascii')    
         sock_DC.sendall(data1) 
         self.actionlist.append(action)
-        time.sleep(1)  
+        time.sleep(0.05)  
                 
     def reset(self):    
         self._envStepCounter=0
@@ -165,14 +168,15 @@ class UR5Env0(gym.Env):
     
 
     def _compute_observation(self):
-        
+        #print("obs")
         inputstring='obs'
         data1=inputstring.encode('ascii')    
         sock_DC.sendall(data1)
+        #print("sent",inputstring)
         data1 = sock_DC.recv(64) 
         while data1== b'':
             data1 = sock_DC.recv(64)  #48 bytes
-            print(data1)
+            #print(data1)
         unpacked = struct.unpack('ffffffffffffffff', data1)
         TransRotatmatrix=np.zeros([4,4])
         for i in range(4):
@@ -227,42 +231,43 @@ class UR5Env0(gym.Env):
 
     def _compute_done(self):
 
-        stepsPerEpisode=10 #did 20 before
-        if self._envStepCounter >= stepsPerEpisode:    
+        #stepsPerEpisode=10 #did 20 before
+        if self._envStepCounter >= self.StepsPerEpisode:    
             #print("RESET!-env counter at max", "final reward value:",self.currentreward)
    
             self.rewardlist.append(self.currentreward)
             
             self.episodecounter=self.episodecounter+1
-            if self.episodecounter%10==0 or self.episodecounter==self.totalepisodes-1:
+            if self.episodecounter%2==0 or self.episodecounter==self.totalepisodes+1:
                 clear_output(wait = True)   #uncomment to clear output at each reset 
-                print("Ep.",self.episodecounter)
+                print("Episode",self.episodecounter)
                 self.fig, (self.ax1) = plt.subplots(1,figsize=(8,8))
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.totalepisodes), ylim=(-0.5,2))
+                plt.setp(self.ax1, xlim=(0, self.totalepisodes), ylim=(-1,0))
 
                 display(self.fig)
             
-            if self.episodecounter%10==0:
-                ts = time.time()
-                st = datetime.datetime.fromtimestamp(ts).strftime('%H:%M:%S')
-                print("Ep:",self.episodecounter,"Dist (m)",self.dist, " Reward:",self.currentreward," Final Position: ", self.xyz, "Time:",st)
+            #if self.episodecounter%10==0:
+            #    ts = time.time()
+            #    st = datetime.datetime.fromtimestamp(ts).strftime('%H:%M:%S')
+            #    print("Ep:",self.episodecounter, " Reward:",self.currentreward, "Time:",st)
                 #"Target:",(self.targetx,self.targety,self.targetz)
                 
             #print("action list",self.actionlist)
 
             if len(self.rewardlist)>self.totalepisodes:
                 self.rewardlist.pop(0)
-                
-        if self.episodecounter>= self.totalepisodes:
+        """      
+        if self.episodecounter>= self.totalepisodes+1:
             inputstring='end'
             data1=inputstring.encode('ascii')    
             sock_DC.sendall(data1)
             print("Training End")
             print('closing DC socket in .py policy file')
+            print(self.rewardlist)
             sock_D.close()
-            
-        return  self._envStepCounter >= stepsPerEpisode #self.currentreward > -0.001 or
+        """      
+        return  self._envStepCounter >= self.StepsPerEpisode #self.currentreward > -0.001 or
     

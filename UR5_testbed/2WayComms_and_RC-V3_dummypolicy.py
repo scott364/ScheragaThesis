@@ -6,10 +6,10 @@ from remote_FT_client import RemoteFTclient
 from time import sleep
 
 HOST2 = '192.168.0.103'
-PORT2= 65461
+PORT2= 65481
 
 FTclient = RemoteFTclient( '192.168.0.103', 10000 )
-print( FTclient.prxy.system.listMethods() )
+#print( FTclient.prxy.system.listMethods() )
 
 def rot2rpy(Rt, degrees=False):
     """ Converts a rotation matrix into rpy / intrinsic xyz euler angle form.
@@ -66,6 +66,10 @@ try:
             data = sock.recv(64)  #48 bytes
             #print(data)
             #value = struct.unpack('f',data)
+            #print(data)
+            while data==b'':
+                data = sock.recv(64)  
+            #print(data)   
             unpacked = struct.unpack('ffffffffffffffff', data)
             #print(unpacked)
             #print('Received', repr(data))
