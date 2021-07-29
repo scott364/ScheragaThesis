@@ -20,14 +20,29 @@ import socket
 import numpy as np
 import struct
 from scipy.spatial.transform import Rotation as R
-from remote_FT_client import RemoteFTclient
+#from remote_FT_client import RemoteFTclient
 from time import sleep
+import selectors
 
-HOST2 = '192.168.0.103'
-PORT2= 65481
+HOST_DC = '192.168.0.103'
+PORT_DC= 65487
 
+
+sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#sock_DC.setblocking(False)
+server_address_DC = (HOST_DC, PORT_DC)# Connect the socket to the port where the server is listening
+print('DC socket connecting to {} port {}'.format(*server_address_DC))
+sock_DC.connect(server_address_DC)
+
+initialrunflag=1   #changed to zero after the first run
+
+"""
 FTclient = RemoteFTclient( '192.168.0.103', 10000 )
 print( FTclient.prxy.system.listMethods() )
+
+print( "Biasing wrist force" )
+FTclient.bias_wrist_force()
+"""
 
 def rot2rpy(Rt, degrees=False):
     """ Converts a rotation matrix into rpy / intrinsic xyz euler angle form.
@@ -45,43 +60,24 @@ def rpy2rot(rpy, degrees=False):
     """
     return R.from_euler('xyz', rpy, degrees=degrees).as_matrix()
 
-# Create a TCP/IP socket
-
-sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address_DC = (HOST2, PORT2)# Connect the socket to the port where the server is listening
-print('DC socket connecting to {} port {}'.format(*server_address_DC))
-sock_DC.connect(server_address_DC)
-
-print( "Biasing wrist force" )
-FTclient.bias_wrist_force()
-
 #class BalancebotEnv(gym.Env):
 class UR5Env0(gym.Env):
-    #metadata = {
-    #   'render.modes': ['human', 'rgb_array'],
-    #    'video.frames_per_second' : 50}
-    
-    metadata = {'render.modes': ['human', 'rgb_array'],'video.frames_per_second' : 50}   #not sure if this is needed
-    
 
-    def __init__(self,totalepisodes=100,StepsPerEpisode=10):
+
+    def __init__(self,TotalEpisodes=100,StepsPerEpisode=10):
+        print("TotalEpisodes:",TotalEpisodes, "   StepsPerEpisode:",StepsPerEpisode)
         self._observation = []
         #self.action_space = spaces.Discrete(9)#Generates number between 0 and 9
         self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
 
-      
         #self.action_space = spaces.Box(np.array([-0.01, -0.01, -0.01]), """ x, y, z min """
         #                                    np.array([0.01, 0.01, 0.01])) # x, y, z max
-        
         """
         self.observation_space = spaces.Box(np.array([-1000,-1000,-1000,-1000,-1000, -40, -40,-40]), 
                                             np.array([1000,1000,1000,1000,1000,40, 40,40])) # 6 forcetorque, xyz pose
         """
         self.observation_space = spaces.Box(np.array([-30, -30]), 
-                                            np.array([30, 30])) # 6 forcetorque, xy pose
-                                                      
-                             
-                                                      
+                                            np.array([30, 30])) # 6 forcetorque, xy pose                                           
         """
         target is at 
         x -9.334348196083308 y -23.681130581510068 z 2.5003196929477154
@@ -90,17 +86,19 @@ class UR5Env0(gym.Env):
         [-0.06000000000000001, -0.02, 0.36000000000000004, 0.023599999999999996, 0.0034000000000000002, 0]
 
         """
-        self.totalepisodes=totalepisodes
+        self.TotalEpisodes=TotalEpisodes
         self.StepsPerEpisode=StepsPerEpisode
 
         self.fig, (self.ax1) = plt.subplots(1,figsize=(7,7)) # was 8,8
 
         self.curr_action_config = None #when the sim starts, there is no current target. needs to call motion selector to get a target
-        self.episodecounter=0
+        self.episodecounter=1
         self.rewardlist=[]
-
-
+        self.totalstepstaken=0
+     
+        
         self.resetEnvironment()
+        time.sleep(0.1) 
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -113,36 +111,46 @@ class UR5Env0(gym.Env):
         self.motionselector(action)
         self._observation = self._compute_observation()  
         reward = self._compute_reward()
-        done = self._compute_done()
+        
         #if (wrist_forcetorque[2]<-20   or wrist_forcetorque[2]>20):
         #    done=True
         
             
         #print("step:", self._envStepCounter, "action:",action, "observation",[self.xcurrent,self.ycurrent,self.zcurrent]," reward",self.currentreward )
-        self._envStepCounter += 1
+   
+        
+        self._envStepCounter += 1  #was uncommented. commenting this may break the system
+        self.totalstepstaken+=1
+        done = self._compute_done()
         return np.array(self._observation), reward, done, {}
     
     def motionselector(self,action):
     
         if action==0:  
             inputstring='h'
-            #print("action taken:", inputstring) 
+            if self.totalstepstaken>=410:
+                print("action taken:", inputstring) 
         if action==1:  
             inputstring='k'
-            #print("action taken:", inputstring) 
+            if self.totalstepstaken>=410:
+                print("action taken:", inputstring) 
         if action==2:  
             inputstring='u'
-            #print("action taken:", inputstring) 
+            if self.totalstepstaken>=410:
+                print("action taken:", inputstring) 
         if action==3:  
             inputstring='j'
-            #print("action taken:", inputstring) 
-        data1=inputstring.encode('ascii')    
-        sock_DC.sendall(data1) 
+            if self.totalstepstaken>=410:
+                print("action taken:", inputstring) 
+        command_msg=inputstring.encode('ascii')    
+        sock_DC.send(command_msg) 
         self.actionlist.append(action)
         time.sleep(0.05)  
                 
     def reset(self):    
         self._envStepCounter=0
+        #if self.totalstepstaken>=410:
+        #    print("reset")
         self.resetEnvironment()
 
 
@@ -151,12 +159,28 @@ class UR5Env0(gym.Env):
     
     def resetEnvironment(self):
          #inputstring=='home',inputstring=='end'
-        self._envStepCounter = 0
-
-        inputstring='home'
-        data1=inputstring.encode('ascii')    
-        sock_DC.sendall(data1) 
-        
+        #self._envStepCounter = 0
+        global initialrunflag
+        if initialrunflag==1:
+                    
+            #From Safepose, get the peg from holder, bring above target
+            inputstring='fetch'
+            msg=inputstring.encode('ascii')    
+            sock_DC.send(msg)    
+            #sleep(5)#may need to increase!!! #0.020 ) 
+            initialrunflag=0
+        else:
+            #from pose near target, bring peg to above-target-pose, 
+            #then to safepose, then to pose above holder, drop peg, regrab, bring to safepose then to target, 
+            inputstring='reset'
+            msg=inputstring.encode('ascii')    
+            sock_DC.send(msg) 
+            #sleep(5)#may need to increase!!! #0.020 ) 
+        data2 = sock_DC.recv(64) 
+        while data2== b'':
+            data2 = sock_DC.recv(64)  #48 bytes
+        print(data2, "env reset complete")   
+            
         #self._seed()
         #random.seed()
     
@@ -168,27 +192,45 @@ class UR5Env0(gym.Env):
     
 
     def _compute_observation(self):
-        #print("obs")
+        
+        
+        #if self.totalstepstaken>=410:
+        #    print("obs")
         inputstring='obs'
-        data1=inputstring.encode('ascii')    
-        sock_DC.sendall(data1)
+
+        msg2=inputstring.encode('ascii')    
+        sock_DC.send(msg2)
         #print("sent",inputstring)
-        data1 = sock_DC.recv(64) 
-        while data1== b'':
-            data1 = sock_DC.recv(64)  #48 bytes
+        data2 = sock_DC.recv(64) 
+        while data2== b'':
+            data2 = sock_DC.recv(64)  #48 bytes
             #print(data1)
-        unpacked = struct.unpack('ffffffffffffffff', data1)
+        unpacked = struct.unpack('ffffffffffffffff', data2)
+        #if self.totalstepstaken>=410:
+        #    print("unpacked data: ",unpacked)
         TransRotatmatrix=np.zeros([4,4])
         for i in range(4):
             TransRotatmatrix[i][:]=unpacked[0+(4*i):4+(4*i)]
-        rpy=rot2rpy(TransRotatmatrix[0:3,0:3],True)
+        
+            
+        """
+        
+        TransRotatmatrix=np.array([[-0.99934441,-0.00610222  ,0.03568637 ,-0.14532579],
+                       [-0.00426994  ,0.99867947  ,0.05119661 ,-0.30391228],
+                       [-0.03595166  ,0.05101066 ,-0.9980508  , 0.26136942],
+                       [ 0.          ,0.          ,0.          ,1.        ]])
+        
+        """
         x_pose=TransRotatmatrix[0][3]*39.3701  #convert to inches 
         y_pose=TransRotatmatrix[1][3]*39.3701
         z_pose=TransRotatmatrix[2][3]*39.3701
+        rpy=rot2rpy(TransRotatmatrix[0:3,0:3],True)
         roll=rpy[0]  #In degrees!
         pitch=rpy[1]
         yaw=rpy[2]
-       
+        
+    
+        """
         forcesamples=5
         FT_list=[]
         AVG_FT_list=[0]*6  #3 forces 3 torques
@@ -200,18 +242,22 @@ class UR5Env0(gym.Env):
             AVG_FT_list[i]=0
             for j in range(len(FT_list)):  
                 AVG_FT_list[i]+=FT_list[j][i]    
+
             AVG_FT_list[i]=AVG_FT_list[i]/(len(FT_list))
         #print("x",x_pose,"y",y_pose,"z",z_pose)
         #print("roll",roll,"pitch",pitch,"yaw",yaw)
         #print("Forces and Torques:", AVG_FT_list)
-
+        """
         return[x_pose,y_pose]
 
      
     
     def _compute_reward(self):
+        #if self.totalstepstaken>=410:
+        #        print("compute reward called, about to call 'obs'")
         [currentX,currentY]=self._compute_observation()
-        
+        #if self.totalstepstaken>=410:
+        #        print("pose=",[currentX,currentY])
         """
         target is at 
         x -9.334348196083308 y -23.681130581510068 z 2.5003196929477154
@@ -224,30 +270,37 @@ class UR5Env0(gym.Env):
         targetY= -23.681
         self.currentreward=0 
         self.currentreward=-1* math.sqrt(pow(currentX-targetX,2)+pow(currentY-targetY,2))  #2D distance formula
-
-            
+        #if self.totalstepstaken>=410:
+        #        print("self.currentreward=",self.currentreward)
         return self.currentreward  #negative magnitude. hopefully system tries to reduce this. 
     
 
     def _compute_done(self):
-
-        #stepsPerEpisode=10 #did 20 before
+        #print(f"COMPUTE DONE? Episode: {self.episodecounter} step: {self._envStepCounter} Total Steps taken: {self.totalstepstaken} " )
+        
+        
+        # - done, a boolean, value that is TRUE if the environment reached an endpoint, and should be reset, or FALSE otherwise;
+        
+         #system whent 'home" 39 times
         if self._envStepCounter >= self.StepsPerEpisode:    
+            #print("Episode", self.episodecounter, "over. envStepCounter:", self._envStepCounter," StepsPerEpisode:" , self.StepsPerEpisode)
             #print("RESET!-env counter at max", "final reward value:",self.currentreward)
-   
+
             self.rewardlist.append(self.currentreward)
             
             self.episodecounter=self.episodecounter+1
-            if self.episodecounter%2==0 or self.episodecounter==self.totalepisodes+1:
+            if self.episodecounter%20==0 or self.episodecounter==self.TotalEpisodes+1:
                 clear_output(wait = True)   #uncomment to clear output at each reset 
-                print("Episode",self.episodecounter)
+                print("Episode",self.episodecounter, "  Total Steps taken:", self.totalstepstaken)
                 self.fig, (self.ax1) = plt.subplots(1,figsize=(8,8))
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.totalepisodes), ylim=(-1,0))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-.75,0))
 
                 display(self.fig)
+                
+
             
             #if self.episodecounter%10==0:
             #    ts = time.time()
@@ -257,10 +310,10 @@ class UR5Env0(gym.Env):
                 
             #print("action list",self.actionlist)
 
-            if len(self.rewardlist)>self.totalepisodes:
-                self.rewardlist.pop(0)
+            #if len(self.rewardlist)>self.TotalEpisodes:
+            #   self.rewardlist.pop(0)
         """      
-        if self.episodecounter>= self.totalepisodes+1:
+        if self.episodecounter>= self.TotalEpisodes+1:
             inputstring='end'
             data1=inputstring.encode('ascii')    
             sock_DC.sendall(data1)
@@ -268,6 +321,9 @@ class UR5Env0(gym.Env):
             print('closing DC socket in .py policy file')
             print(self.rewardlist)
             sock_D.close()
-        """      
+        """    
+        #if self._envStepCounter >= self.StepsPerEpisode:
+        #    print ("Episode done at step", self._envStepCounter )
+        
         return  self._envStepCounter >= self.StepsPerEpisode #self.currentreward > -0.001 or
     
