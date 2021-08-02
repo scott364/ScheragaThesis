@@ -4,9 +4,10 @@ import struct
 from scipy.spatial.transform import Rotation as R
 from remote_FT_client import RemoteFTclient
 from time import sleep
+import math
 
 HOST2 = '192.168.0.103'
-PORT2= 65481
+PORT2= 65489
 
 FTclient = RemoteFTclient( '192.168.0.103', 10000 )
 #print( FTclient.prxy.system.listMethods() )
@@ -50,41 +51,46 @@ try:
         if (inputstring=='h' or inputstring=='j' or inputstring=='k' or inputstring=='l' or 
             inputstring=='u' or inputstring=='o'or inputstring=='y' or inputstring=='i' or 
             inputstring=='z' or inputstring=='x' or inputstring=='d' or inputstring=='c'or
-            inputstring=='home',inputstring=='end',inputstring=='obs'):
+            inputstring=='home',inputstring=='end',inputstring=='obs' or inputstring != b'fetch' 
+                or inputstring != b'return' or inputstring != b'reset' ):
 
             data1=inputstring.encode('ascii')    
             sock.sendall(data1)
         if (inputstring=='end'):
             print('end episode')
             break
+        if(inputstring=='bias'):
+            FTclient.bias_wrist_force()
+            print("biased wrist force ")
+  
         """
         data = sock.recv(16)
             #amount_received += len(data)
         print('received {!r}'.format(data))
         """
         if (inputstring=='obs'):
-            data = sock.recv(64)  #48 bytes
-            #print(data)
-            #value = struct.unpack('f',data)
-            #print(data)
-            while data==b'':
-                data = sock.recv(64)  
-            #print(data)   
-            unpacked = struct.unpack('ffffffffffffffff', data)
-            #print(unpacked)
-            #print('Received', repr(data))
+            data2 = sock.recv(64) 
+            while data2== b'':
+                data2 = sock.recv(64)  #48 bytes
+                #print(data1)
+            unpacked = struct.unpack('ffffffffffffffff', data2)
+            #if self.totalstepstaken>=410:
+            #    print("unpacked data: ",unpacked)
             TransRotatmatrix=np.zeros([4,4])
             for i in range(4):
                 TransRotatmatrix[i][:]=unpacked[0+(4*i):4+(4*i)]
+
+                
+                
             #print(TransRotatmatrix)
             rpy=rot2rpy(TransRotatmatrix[0:3,0:3],True)
-            x=TransRotatmatrix[0][3]*39.3701  #convert to inches 
-            y=TransRotatmatrix[1][3]*39.3701
-            z=TransRotatmatrix[2][3]*39.3701
+            currentX=TransRotatmatrix[0][3]*39.3701  #convert to inches 
+            currentY=TransRotatmatrix[1][3]*39.3701
+            currentZ=TransRotatmatrix[2][3]*39.3701
             roll=rpy[0]  #In degrees!
             pitch=rpy[1]
             yaw=rpy[2]
-            print("x",x,"y",y,"z",z)
+            print("currentpose: x",currentX,"y",currentY,"z",currentZ)
             print("roll",roll,"pitch",pitch,"yaw",yaw)
 
             """"""
@@ -105,6 +111,45 @@ try:
             #print( "Bias wrist force" )
             #FTclient.bias_wrist_force()
             #sleep( 3.0 )
+            
+            
+            #Reward calculation--------------------------------------------------
+            #Default initial Z is 0.06915259
+            #half inserted peg Z is 0.044 ish
+            
+            """
+            cylinder above target pos:
+            """
+            initial=np.array(
+            [[-0.99934544,-0.00730877  ,.0354299 ,-0.19068683],
+            [-0.00689006 ,0.99990515 ,0.01192549,-0.49560643],
+            [-0.0355137  ,0.01167357,-0.99930101 ,0.10501393],
+            [ 0.        , 0.         ,0.        , 1.        ]])
+            
+            initialX=initial[0][3]*39.3701  #convert to inches 
+            initialY=initial[1][3]*39.3701
+            initialZ=initial[2][3]*39.3701
+            initialZ=2.72
+            print(" ")
+            print("Reward")
+            #a=self._compute_observation()
+            #[currentX,currentY,currentZ]=self.currentpose  #in inches 
+
+
+            #Default initial Z is 2.72
+            #half inserted peg Z is 0.044 ish
+
+            #[initialX,initialY,initialZ]=self.episodeinitialpose #in inches 
+
+            #self.currentreward=0 
+            currentreward=-1* math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
+            print("currentreward (XY dist to initial point, no bonus:",currentreward)
+            #check for success condition, and if success, add bonus reward :)
+            if abs(initialZ-currentZ)>1: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
+                print("success condition achieved  InitialZ:",initialZ, "currentZ:",currentZ)
+                print("abs z dist=",abs(initialZ-currentZ))
+                print("bonusreward=1-(self._envStepCounter/self.StepsPerEpisode)")
+            
             """"""
     
 finally:

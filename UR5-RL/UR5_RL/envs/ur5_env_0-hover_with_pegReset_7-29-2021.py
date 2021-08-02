@@ -20,12 +20,12 @@ import socket
 import numpy as np
 import struct
 from scipy.spatial.transform import Rotation as R
-from remote_FT_client import RemoteFTclient
+#from remote_FT_client import RemoteFTclient
 from time import sleep
 import selectors
 
 HOST_DC = '192.168.0.103'
-PORT_DC= 65489
+PORT_DC= 65487
 
 
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -36,13 +36,13 @@ sock_DC.connect(server_address_DC)
 
 initialrunflag=1   #changed to zero after the first run
 
-""""""
+"""
 FTclient = RemoteFTclient( '192.168.0.103', 10000 )
 print( FTclient.prxy.system.listMethods() )
 
 print( "Biasing wrist force" )
 FTclient.bias_wrist_force()
-
+"""
 
 def rot2rpy(Rt, degrees=False):
     """ Converts a rotation matrix into rpy / intrinsic xyz euler angle form.
@@ -68,38 +68,22 @@ class UR5Env0(gym.Env):
         print("TotalEpisodes:",TotalEpisodes, "   StepsPerEpisode:",StepsPerEpisode)
         self._observation = []
         #self.action_space = spaces.Discrete(9)#Generates number between 0 and 9
-        self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
+        self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
 
         #self.action_space = spaces.Box(np.array([-0.01, -0.01, -0.01]), """ x, y, z min """
         #                                    np.array([0.01, 0.01, 0.01])) # x, y, z max
-        
-        self.observation_space = spaces.Box(np.array([-100,-100,-100,-100,-100, -30, -30]), 
-                                            np.array([100,100,100,100,100,30, 30])) # 5 forcetorque, xyz pose
+        """
+        self.observation_space = spaces.Box(np.array([-1000,-1000,-1000,-1000,-1000, -40, -40,-40]), 
+                                            np.array([1000,1000,1000,1000,1000,40, 40,40])) # 6 forcetorque, xyz pose
         """
         self.observation_space = spaces.Box(np.array([-30, -30]), 
                                             np.array([30, 30])) # 6 forcetorque, xy pose                                           
-        """
         """
         target is at 
         x -9.334348196083308 y -23.681130581510068 z 2.5003196929477154
         roll 179.26909783765905 pitch 2.003501129340695 yaw -179.58695200183655
         Forces and Torques:
         [-0.06000000000000001, -0.02, 0.36000000000000004, 0.023599999999999996, 0.0034000000000000002, 0]
-
-
-        cylinder above target pos:
-        [[-0.99934544 -0.00730877  0.0354299  -0.19068683]
-         [-0.00689006  0.99990515  0.01192549 -0.49560643]
-         [-0.0355137   0.01167357 -0.99930101  0.10501393]
-         [ 0.          0.          0.          1.        ]]
-         
-         cylinder half-inserted pose:
-         [[-0.99934435 -0.0073168   0.0354588  -0.19065135]
-         [-0.00690059  0.99990602  0.01184609 -0.49437242]
-         [-0.03554215  0.01159364 -0.99930093  0.07050386]
-         [ 0.          0.          0.          1.        ]]
-
-
 
         """
         self.TotalEpisodes=TotalEpisodes
@@ -109,7 +93,6 @@ class UR5Env0(gym.Env):
 
         self.curr_action_config = None #when the sim starts, there is no current target. needs to call motion selector to get a target
         self.episodecounter=1
-        self.episodeinitialobsflag=1
         self.rewardlist=[]
         self.totalstepstaken=0
      
@@ -145,23 +128,20 @@ class UR5Env0(gym.Env):
     
         if action==0:  
             inputstring='h'
-            #if self.totalstepstaken>=410:
-            #    print("action taken:", inputstring) 
-        if action==1: 
+            if self.totalstepstaken>=410:
+                print("action taken:", inputstring) 
+        if action==1:  
             inputstring='k'
-            #if self.totalstepstaken>=410:
-            #    print("action taken:", inputstring) 
+            if self.totalstepstaken>=410:
+                print("action taken:", inputstring) 
         if action==2:  
             inputstring='u'
-            #if self.totalstepstaken>=410:
-            #    print("action taken:", inputstring) 
+            if self.totalstepstaken>=410:
+                print("action taken:", inputstring) 
         if action==3:  
             inputstring='j'
-            #if self.totalstepstaken>=410:
-            #    print("action taken:", inputstring) 
-        if action==4:  
-            inputstring='l'  #moves straight down'    
-            
+            if self.totalstepstaken>=410:
+                print("action taken:", inputstring) 
         command_msg=inputstring.encode('ascii')    
         sock_DC.send(command_msg) 
         self.actionlist.append(action)
@@ -169,19 +149,19 @@ class UR5Env0(gym.Env):
                 
     def reset(self):    
         self._envStepCounter=0
-        self.doneflag=0
         #if self.totalstepstaken>=410:
         #    print("reset")
         self.resetEnvironment()
+
+
         self._observation = self._compute_observation() #you *have* to compute and return the observation from reset()
-        self.episodeinitialpose=self.currentpose #contains just initial xyz poses IN INCHES
         return np.array(self._observation)
     
     def resetEnvironment(self):
          #inputstring=='home',inputstring=='end'
-        
+        #self._envStepCounter = 0
         global initialrunflag
-        if initialrunflag==1:  # for first episode of training/running policy
+        if initialrunflag==1:
                     
             #From Safepose, get the peg from holder, bring above target
             inputstring='fetch'
@@ -199,7 +179,7 @@ class UR5Env0(gym.Env):
         data2 = sock_DC.recv(64) 
         while data2== b'':
             data2 = sock_DC.recv(64)  #48 bytes
-        #print(data2, "env reset complete")   
+        print(data2, "env reset complete")   
             
         #self._seed()
         #random.seed()
@@ -248,10 +228,9 @@ class UR5Env0(gym.Env):
         roll=rpy[0]  #In degrees!
         pitch=rpy[1]
         yaw=rpy[2]
-        self.currentpose=[x_pose,y_pose,z_pose]#In inches
         
     
-        
+        """
         forcesamples=5
         FT_list=[]
         AVG_FT_list=[0]*6  #3 forces 3 torques
@@ -268,48 +247,45 @@ class UR5Env0(gym.Env):
         #print("x",x_pose,"y",y_pose,"z",z_pose)
         #print("roll",roll,"pitch",pitch,"yaw",yaw)
         #print("Forces and Torques:", AVG_FT_list)
-       
-        return[AVG_FT_list[0],AVG_FT_list[1],AVG_FT_list[2],
-                   AVG_FT_list[3],AVG_FT_list[4],x_pose,y_pose]
+        """
+        return[x_pose,y_pose]
+
      
     
     def _compute_reward(self):
         #if self.totalstepstaken>=410:
         #        print("compute reward called, about to call 'obs'")
-        a=self._compute_observation()
-        [currentX,currentY,currentZ]=self.currentpose  #in inches 
-     
-        
-        #Default initial Z is 0.06915259
-        #half inserted peg Z is 0.044 ish
-        
-        [initialX,initialY,initialZ]=self.episodeinitialpose #in inches 
-        
+        [currentX,currentY]=self._compute_observation()
+        #if self.totalstepstaken>=410:
+        #        print("pose=",[currentX,currentY])
+        """
+        target is at 
+        x -9.334348196083308 y -23.681130581510068 z 2.5003196929477154
+        roll 179.26909783765905 pitch 2.003501129340695 yaw -179.58695200183655
+        Forces and Torques:
+        [-0.06000000000000001, -0.02, 0.36000000000000004, 0.023599999999999996, 0.0034000000000000002, 0]
+
+        """
+        targetX= -9.334
+        targetY= -23.681
         self.currentreward=0 
-        self.currentreward=-1* math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
-        
-        #check for success condition, and if success, add bonus reward :)
-        if abs(initialZ-currentZ)>1: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
-            print("success condition achieved at timestep",self._envStepCounter,"during ep-",self.episodecounter)
-            bonusreward=1-(self._envStepCounter/self.StepsPerEpisode)
-            self.currentreward =self.currentreward + bonusreward
-            self.doneflag=1
-            
-        return self.currentreward 
+        self.currentreward=-1* math.sqrt(pow(currentX-targetX,2)+pow(currentY-targetY,2))  #2D distance formula
+        #if self.totalstepstaken>=410:
+        #        print("self.currentreward=",self.currentreward)
+        return self.currentreward  #negative magnitude. hopefully system tries to reduce this. 
     
 
     def _compute_done(self):
         #print(f"COMPUTE DONE? Episode: {self.episodecounter} step: {self._envStepCounter} Total Steps taken: {self.totalstepstaken} " )
+        
+        
         # - done, a boolean, value that is TRUE if the environment reached an endpoint, and should be reset, or FALSE otherwise;
         
          #system whent 'home" 39 times
-        if self._envStepCounter >= self.StepsPerEpisode or self.doneflag==1:    
+        if self._envStepCounter >= self.StepsPerEpisode:    
             #print("Episode", self.episodecounter, "over. envStepCounter:", self._envStepCounter," StepsPerEpisode:" , self.StepsPerEpisode)
             #print("RESET!-env counter at max", "final reward value:",self.currentreward)
-            if self.doneflag==1:
-                
-            
-            
+
             self.rewardlist.append(self.currentreward)
             
             self.episodecounter=self.episodecounter+1
@@ -320,7 +296,7 @@ class UR5Env0(gym.Env):
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-.75,1))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-.75,0))
 
                 display(self.fig)
                 
@@ -349,5 +325,5 @@ class UR5Env0(gym.Env):
         #if self._envStepCounter >= self.StepsPerEpisode:
         #    print ("Episode done at step", self._envStepCounter )
         
-        return  self._envStepCounter >= self.StepsPerEpisode or self.doneflag==1#self.currentreward > -0.001 or
+        return  self._envStepCounter >= self.StepsPerEpisode #self.currentreward > -0.001 or
     
