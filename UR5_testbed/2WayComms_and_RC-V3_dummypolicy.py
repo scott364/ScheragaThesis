@@ -70,8 +70,8 @@ try:
         """
         if (inputstring=='obs'):
             data2 = sock.recv(64) 
-            while data2== b'':
-                data2 = sock.recv(64)  #48 bytes
+            #while data2== b'':
+            #    data2 = sock.recv(64)  #48 bytes
                 #print(data1)
             unpacked = struct.unpack('ffffffffffffffff', data2)
             #if self.totalstepstaken>=410:
@@ -144,8 +144,9 @@ try:
             #self.currentreward=0 
             currentreward=-1* math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
             print("currentreward (XY dist to initial point, no bonus:",currentreward)
+            print("InitialZ:",initialZ, "currentZ:",currentZ)
             #check for success condition, and if success, add bonus reward :)
-            if abs(initialZ-currentZ)>1: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
+            if initialZ-currentZ>0.72: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
                 print("success condition achieved  InitialZ:",initialZ, "currentZ:",currentZ)
                 print("abs z dist=",abs(initialZ-currentZ))
                 print("bonusreward=1-(self._envStepCounter/self.StepsPerEpisode)")

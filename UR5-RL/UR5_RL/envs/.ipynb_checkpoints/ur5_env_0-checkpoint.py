@@ -25,7 +25,7 @@ from time import sleep
 import selectors
 
 HOST_DC = '192.168.0.103'
-PORT_DC= 65489
+PORT_DC= 65481
 
 
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -168,13 +168,13 @@ class UR5Env0(gym.Env):
         time.sleep(0.05)  
                 
     def reset(self):    
-        self._envStepCounter=0
+        self._envStepCounter=1
         self.doneflag=0
         #if self.totalstepstaken>=410:
         #    print("reset")
         self.resetEnvironment()
         self._observation = self._compute_observation() #you *have* to compute and return the observation from reset()
-        self.episodeinitialpose=self.currentpose #contains just initial xyz poses
+        self.episodeinitialpose=self.currentpose #contains just initial xyz poses IN INCHES
         return np.array(self._observation)
     
     def resetEnvironment(self):
@@ -248,7 +248,7 @@ class UR5Env0(gym.Env):
         roll=rpy[0]  #In degrees!
         pitch=rpy[1]
         yaw=rpy[2]
-        self.currentpose=[x_pose,y_pose,z_pose]
+        self.currentpose=[x_pose,y_pose,z_pose]#In inches
         
     
         
@@ -284,16 +284,19 @@ class UR5Env0(gym.Env):
         #half inserted peg Z is 0.044 ish
         
         [initialX,initialY,initialZ]=self.episodeinitialpose #in inches 
-        
+        bonusreward=0
         self.currentreward=0 
-        self.currentreward=-1* math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
-        
+        XYdist=-1* math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
+        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "InitialZ:",initialZ, "currentZ:",currentZ, "Diff",(initialZ-currentZ))
         #check for success condition, and if success, add bonus reward :)
-        if abs(initialZ-currentZ)>1: #1 inch
-            bonusreward=1-(self._envStepCounter/self.StepsPerEpisode)
-            self.currentreward =self.currentreward + bonusreward
+        if initialZ-currentZ>0.8: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
+            bonusreward=(1-(self._envStepCounter/self.StepsPerEpisode))+0.2
             self.doneflag=1
+        print("Base Reward:",XYdist, "bonusreward:",bonusreward,"Total:", (XYdist+bonusreward) )
+        if initialZ-currentZ>0.8:
+            print("success condition achieved at timestep",self._envStepCounter,"during ep:",self.episodecounter)
             
+        self.currentreward = XYdist + bonusreward          
         return self.currentreward 
     
 
@@ -302,19 +305,16 @@ class UR5Env0(gym.Env):
         # - done, a boolean, value that is TRUE if the environment reached an endpoint, and should be reset, or FALSE otherwise;
         
          #system whent 'home" 39 times
-        if self._envStepCounter >= self.StepsPerEpisode or self.doneflag==1:    
+        if self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1:    
             #print("Episode", self.episodecounter, "over. envStepCounter:", self._envStepCounter," StepsPerEpisode:" , self.StepsPerEpisode)
             #print("RESET!-env counter at max", "final reward value:",self.currentreward)
-            if self.doneflag==1:
-                print("success condition achieved at timestep",self._envStepCounter,"during ep-",self.episodecounter)
-            
-            
+
             self.rewardlist.append(self.currentreward)
             
             self.episodecounter=self.episodecounter+1
             if self.episodecounter%20==0 or self.episodecounter==self.TotalEpisodes+1:
                 clear_output(wait = True)   #uncomment to clear output at each reset 
-                print("Episode",self.episodecounter, "  Total Steps taken:", self.totalstepstaken)
+                print("Ep:",self.episodecounter, "  Total Steps taken:", self.totalstepstaken)
                 self.fig, (self.ax1) = plt.subplots(1,figsize=(8,8))
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
@@ -348,5 +348,5 @@ class UR5Env0(gym.Env):
         #if self._envStepCounter >= self.StepsPerEpisode:
         #    print ("Episode done at step", self._envStepCounter )
         
-        return  self._envStepCounter >= self.StepsPerEpisode or self.doneflag==1#self.currentreward > -0.001 or
+        return  self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1#self.currentreward > -0.001 or
     
