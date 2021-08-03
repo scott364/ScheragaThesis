@@ -112,7 +112,7 @@ class UR5Env0(gym.Env):
         self.episodeinitialobsflag=1
         self.rewardlist=[]
         self.totalstepstaken=0
-     
+        self.totalsuccesscounter=0
         
         self.resetEnvironment()
         time.sleep(0.1) 
@@ -287,14 +287,18 @@ class UR5Env0(gym.Env):
         bonusreward=0
         self.currentreward=0 
         XYdist=-1* math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
-        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "InitialZ:",initialZ, "currentZ:",currentZ, "Diff",(initialZ-currentZ))
+        #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "InitialZ:",initialZ, "currentZ:",currentZ, "Difference",(initialZ-currentZ))
         #check for success condition, and if success, add bonus reward :)
-        if initialZ-currentZ>0.8: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
-            bonusreward=(1-(self._envStepCounter/self.StepsPerEpisode))+0.2
+        successZthreshold=0.79
+        if initialZ-currentZ>successZthreshold: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
+            bonusreward=(1-(self._envStepCounter/self.StepsPerEpisode))+0.3
             self.doneflag=1
-        print("Base Reward:",XYdist, "bonusreward:",bonusreward,"Total:", (XYdist+bonusreward) )
-        if initialZ-currentZ>0.8:
-            print("success condition achieved at timestep",self._envStepCounter,"during ep:",self.episodecounter)
+        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Rewards--Base:",XYdist, " Bonus:",bonusreward," Total:", 
+              (XYdist+bonusreward) )
+        #print("   Rewards--Base:",XYdist, " Bonus:",bonusreward," Total:", (XYdist+bonusreward) )
+        if initialZ-currentZ>successZthreshold:
+            self.totalsuccesscounter+=1
+            print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
             
         self.currentreward = XYdist + bonusreward          
         return self.currentreward 
@@ -312,6 +316,7 @@ class UR5Env0(gym.Env):
             self.rewardlist.append(self.currentreward)
             
             self.episodecounter=self.episodecounter+1
+            print("   Actionlist:",self.actionlist)
             if self.episodecounter%20==0 or self.episodecounter==self.TotalEpisodes+1:
                 clear_output(wait = True)   #uncomment to clear output at each reset 
                 print("Ep:",self.episodecounter, "  Total Steps taken:", self.totalstepstaken)
@@ -319,7 +324,7 @@ class UR5Env0(gym.Env):
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-.75,1))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-0.5,0.5))
 
                 display(self.fig)
                 

@@ -7,7 +7,7 @@ from time import sleep
 import math
 
 HOST2 = '192.168.0.103'
-PORT2= 65489
+PORT2= 65481
 
 FTclient = RemoteFTclient( '192.168.0.103', 10000 )
 #print( FTclient.prxy.system.listMethods() )
