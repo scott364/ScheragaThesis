@@ -72,9 +72,16 @@ class UR5Env0(gym.Env):
 
         #self.action_space = spaces.Box(np.array([-0.01, -0.01, -0.01]), """ x, y, z min """
         #                                    np.array([0.01, 0.01, 0.01])) # x, y, z max
+        #self.observation_space = spaces.Box(np.array([-100,-100,-100,-100,-100, -30, -30]), 
+         #                                   np.array([100,100,100,100,100,30, 30])) # 5 forcetorque, xyz pose
         
-        self.observation_space = spaces.Box(np.array([-100,-100,-100,-100,-100, -30, -30]), 
-                                            np.array([100,100,100,100,100,30, 30])) # 5 forcetorque, xyz pose
+        self.observation_space = spaces.Box(np.array([-5,-5,-25,-1,-1,-8, -20]), 
+                                            np.array([5,  5,  0, 1, 1,-6,-18])) # 5 forcetorque, xyz pose
+        
+        
+
+       
+        
         """
         self.observation_space = spaces.Box(np.array([-30, -30]), 
                                             np.array([30, 30])) # 6 forcetorque, xy pose                                           
@@ -104,7 +111,21 @@ class UR5Env0(gym.Env):
         """
         self.TotalEpisodes=TotalEpisodes
         self.StepsPerEpisode=StepsPerEpisode
-
+        self.xforcemin=-5
+        self.xforcemax=5
+        self.yforcemin=-5
+        self.yforcemax=5
+        
+        self.zforcemin=-25
+        self.zforcemax=0
+        self.rolltorquemin=-1
+        self.rolltorquemax=1
+        self.pitchtorquemin=-1
+        self.pitchtorquemax=1
+        self.yawtorquemin=-.1
+        self.yawtorquemax=.1
+        
+        
         self.fig, (self.ax1) = plt.subplots(1,figsize=(7,7)) # was 8,8
 
         self.curr_action_config = None #when the sim starts, there is no current target. needs to call motion selector to get a target
@@ -268,9 +289,36 @@ class UR5Env0(gym.Env):
         #print("x",x_pose,"y",y_pose,"z",z_pose)
         #print("roll",roll,"pitch",pitch,"yaw",yaw)
         #print("Forces and Torques:", AVG_FT_list)
-       
-        return[AVG_FT_list[0],AVG_FT_list[1],AVG_FT_list[2],
-                   AVG_FT_list[3],AVG_FT_list[4],x_pose,y_pose]
+        """
+        self.xforcemin=-5
+        self.xforcemax=5
+        self.yforcemin=-5
+        self.yforcemax=5
+        
+        self.zforcemin=-25
+        self.zforcemax=0
+        self.rolltorquemin=-1
+        self.rolltorquemax=1
+        self.pitchtorquemin=-1
+        self.pitchtorquemax=1
+        self.yawtorquemin=-.1
+        self.yawtorquemax=.1
+        """
+        
+        
+        xforce_normalized=((AVG_FT_list[0]-self.xforcemin)/(self.xforcemax-self.xforcemin)*2)-1
+        yforce_normalized=((AVG_FT_list[1]-self.yforcemin)/(self.yforcemax-self.yforcemin)*2)-1
+        zforce_normalized=((AVG_FT_list[2]-self.zforcemin)/(self.zforcemax-self.zforcemin)*2)-1
+        rolltorque_normalized=((AVG_FT_list[3]-self.rolltorquemin)/(self.rolltorquemax-self.rolltorquemin)*2)-1
+        pitchtorque_normalized=((AVG_FT_list[4]-self.pitchtorquemin)/(self.pitchtorquemax-self.pitchtorquemin)*2)-1
+        #yawtorque_normalized=((AVG_FT_list[0]-self.xforcemin)/(self.xforcemax-self.xforcemin)*2)-1
+        
+        #return[AVG_FT_list[0],AVG_FT_list[1],AVG_FT_list[2],
+        #           AVG_FT_list[3],AVG_FT_list[4],x_pose,y_pose]
+    
+        return[xforce_normalized,yforce_normalized,zforce_normalized,
+                   rolltorque_normalized,pitchtorque_normalized,x_pose,y_pose]
+    
      
     
     def _compute_reward(self):
@@ -286,21 +334,38 @@ class UR5Env0(gym.Env):
         [initialX,initialY,initialZ]=self.episodeinitialpose #in inches 
         bonusreward=0
         self.currentreward=0 
-        XYdist=-1* math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
-        #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "InitialZ:",initialZ, "currentZ:",currentZ, "Difference",(initialZ-currentZ))
-        #check for success condition, and if success, add bonus reward :)
+        
+
+        XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
+    
+ 
+        if XYdist>0.2 and (1.96-currentZ)<0.1 :
+            self.currentreward =-1
+        else: 
+            #2.620986220472 initial z pose
+            #2.16  z at contacting the table w/o peg/gripper sliding 
+            
+            self.currentreward =1.96-currentZ  #2.16 seems to be z position of just on the plastic though
+            
         successZthreshold=0.79
         if initialZ-currentZ>successZthreshold: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
             bonusreward=(1-(self._envStepCounter/self.StepsPerEpisode))+0.3
             self.doneflag=1
-        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Rewards--Base:",XYdist, " Bonus:",bonusreward," Total:", 
-              (XYdist+bonusreward) )
+            
+            
+        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
         #print("   Rewards--Base:",XYdist, " Bonus:",bonusreward," Total:", (XYdist+bonusreward) )
         if initialZ-currentZ>successZthreshold:
             self.totalsuccesscounter+=1
             print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
             
-        self.currentreward = XYdist + bonusreward          
+        #self.currentreward = XYdist + bonusreward         
+        
+        #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "InitialZ:",initialZ, "currentZ:",currentZ, "Difference",(initialZ-currentZ))
+        #check for success condition, and if success, add bonus reward :)
+        
+        
+        
         return self.currentreward 
     
 
