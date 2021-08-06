@@ -75,8 +75,8 @@ class UR5Env0(gym.Env):
         #self.observation_space = spaces.Box(np.array([-100,-100,-100,-100,-100, -30, -30]), 
          #                                   np.array([100,100,100,100,100,30, 30])) # 5 forcetorque, xyz pose
         
-        self.observation_space = spaces.Box(np.array([-5,-5,-25,-1,-1,-8, -20]), 
-                                            np.array([5,  5,  0, 1, 1,-6,-18])) # 5 forcetorque, xyz pose
+        self.observation_space = spaces.Box(np.array([-5,-5,-25,-1,-1,-8.5, -20.5]), 
+                                            np.array([5,  5,  0, 1, 1,-6.5,-18.5])) # 5 forcetorque, xyz pose
         
         
 
