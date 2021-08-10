@@ -217,9 +217,13 @@ class UR5Env0(gym.Env):
             msg=inputstring.encode('ascii')    
             sock_DC.send(msg) 
             #sleep(5)#may need to increase!!! #0.020 ) 
-        data2 = sock_DC.recv(64) 
+            
+            
+        data2 = sock_DC.recv(64) #receive the "done" command
         while data2== b'':
             data2 = sock_DC.recv(64)  #48 bytes
+            
+            
         #print(data2, "env reset complete")   
             
         #self._seed()

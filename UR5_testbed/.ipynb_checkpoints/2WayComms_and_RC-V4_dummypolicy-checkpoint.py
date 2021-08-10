@@ -7,7 +7,7 @@ from time import sleep
 import math
 
 HOST2 = '192.168.0.103'
-PORT2= 65481
+PORT2= 65483
 
 FTclient = RemoteFTclient( '192.168.0.103', 10000 )
 #print( FTclient.prxy.system.listMethods() )
@@ -51,18 +51,20 @@ try:
         if (inputstring=='h' or inputstring=='j' or inputstring=='k' or inputstring=='l' or 
             inputstring=='u' or inputstring=='o'or inputstring=='y' or inputstring=='i' or 
             inputstring=='z' or inputstring=='x' or inputstring=='d' or inputstring=='c'or
-            inputstring=='home',inputstring=='end',inputstring=='obs' or inputstring != b'fetch' 
+            inputstring!='home' or inputstring!='end' or inputstring!='obs' or inputstring != b'fetch' 
                 or inputstring != b'return' or inputstring != b'reset' ):
 
             data1=inputstring.encode('ascii')    
             sock.sendall(data1)
             
             
-        """   
-            data2 = sock_DC.recv(64) #receive the "done" command
-        while data2== b'':
-            data2 = sock_DC.recv(64)  #48 bytes
-        """     
+        if (inputstring == 'fetch'  or inputstring == 'return' or inputstring == 'reset' ):
+            print("waiting for done response")
+            data2 = sock.recv(64) #receive the "done" command
+            while data2== b'':
+                data2 = sock.recv(64)  #48 bytes
+            print(data2)
+
             
             
         if (inputstring=='end'):
@@ -81,8 +83,8 @@ try:
             data2 = sock.recv(64) 
             while data2== b'':
                 data2 = sock.recv(64)  #48 bytes
-                print(data2)
-            print(data2)
+                #print(data2)
+            #print(data2)
             unpacked = struct.unpack('ffffffffffffffff', data2)
             #if self.totalstepstaken>=410:
             #    print("unpacked data: ",unpacked)

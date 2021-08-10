@@ -56,6 +56,15 @@ try:
 
             data1=inputstring.encode('ascii')    
             sock.sendall(data1)
+            
+            
+        """   
+            data2 = sock_DC.recv(64) #receive the "done" command
+        while data2== b'':
+            data2 = sock_DC.recv(64)  #48 bytes
+        """     
+            
+            
         if (inputstring=='end'):
             print('end episode')
             break
@@ -70,9 +79,10 @@ try:
         """
         if (inputstring=='obs'):
             data2 = sock.recv(64) 
-            #while data2== b'':
-            #    data2 = sock.recv(64)  #48 bytes
-                #print(data1)
+            while data2== b'':
+                data2 = sock.recv(64)  #48 bytes
+                print(data2)
+            print(data2)
             unpacked = struct.unpack('ffffffffffffffff', data2)
             #if self.totalstepstaken>=410:
             #    print("unpacked data: ",unpacked)
