@@ -250,8 +250,7 @@ class UR5Env0(gym.Env):
         while data2== b'':
             data2 = sock_DC.recv(64)  #48 bytes
             #print(data1)
-        #unpacked = struct.unpack('ffffffffffffffff', data2)
-        unpacked = struct.unpack('ffffffffffffffffffffff', data2)
+        unpacked = struct.unpack('ffffffffffffffff', data2)
         #if self.totalstepstaken>=410:
         #    print("unpacked data: ",unpacked)
         TransRotatmatrix=np.zeros([4,4])
@@ -276,13 +275,8 @@ class UR5Env0(gym.Env):
         yaw=rpy[2]
         self.currentpose=[x_pose,y_pose,z_pose]#In inches
         
-        AVG_FT_list=[]
-        for j in range(6):
-                AVG_FT_list.append(unpacked[16+j])
-            #print("forcetorque:",forcetorque)
-        
     
-        """
+        
         forcesamples=5
         FT_list=[]
         AVG_FT_list=[0]*6  #3 forces 3 torques
@@ -296,14 +290,12 @@ class UR5Env0(gym.Env):
                 AVG_FT_list[i]+=FT_list[j][i]    
 
             AVG_FT_list[i]=AVG_FT_list[i]/(len(FT_list))
-        """    
-            
         #print("x",x_pose,"y",y_pose,"z",z_pose)
         #print("roll",roll,"pitch",pitch,"yaw",yaw)
         #print("Forces and Torques:", AVG_FT_list)
         
         
-        """  NEED TO RE-SAMPLE THE VALUES AND FIND A WAY TO ZERO THE FORCES AND TORQUES!!
+        """
         self.xforcemin=-5
         self.xforcemax=5
         self.yforcemin=-5
