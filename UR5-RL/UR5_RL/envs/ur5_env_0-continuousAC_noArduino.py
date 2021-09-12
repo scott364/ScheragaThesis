@@ -23,30 +23,8 @@ from scipy.spatial.transform import Rotation as R
 from time import sleep
 import selectors
 
-import time
-
-#Arduino Button
-import serial
-import serial.tools.list_ports
-ports = serial.tools.list_ports.comports()
-#sudo chmod a+rw /dev/ttyACM0
-#print(ports)
-[port.manufacturer for port in ports]
-def find_arduino(port=None):
-    """Get the name of the port that is connected to Arduino."""
-    if port is None:
-        ports = serial.tools.list_ports.comports()
-        for p in ports:
-            if p.manufacturer is not None and "SparkFun" in p.manufacturer:
-                port = p.device
-    return port
-arduinoport = find_arduino()
-print("port=",arduinoport)
-arduinoserial = serial.Serial(arduinoport,9600)
-
-
 bot='red'  #'blue'
-print('the', bot, ' robot is being used. Please change the bot identity variable if this is incorrect')
+print(bot, "robot is being used. Please change the bot variable if this is incorrect")
 if bot=='red':
     from remote_FT_client import RemoteFTclient
     FTclient = RemoteFTclient( '192.168.0.103', 10000 )
@@ -393,10 +371,10 @@ class UR5Env0(gym.Env):
         self.currentreward=0 
         
 
-        XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula from initial point
+        XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
     
-         
-        if XYdist>0.2:  #if too far away from initial, set reward to -1./ 
+ 
+        if XYdist>0.2 and (1.96-currentZ)<0.1 :
             self.currentreward =-1
         else: 
             #2.620986220472 initial z pose
@@ -404,24 +382,18 @@ class UR5Env0(gym.Env):
             
             self.currentreward =1.96-currentZ  #2.16 seems to be z position of just on the plastic though
             
-            #self.currentreward=self.currentreward+((self.StepsPerEpisode-self._envStepCounter)/self.StepsPerEpisode)
-            
-        #successZthreshold=0.79
-        
-        arduinoserial.write(b'q\n')  #request a 0 or 1 from the arduino button
-        arduinobuttonstatus = arduinoserial.readline()
-  
-        #print(b)
-        if arduinobuttonstatus== b'1\r\n':
-            print("BUTTON PRESSED! Episode over!")
-            self.currentreward=self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success
+        successZthreshold=0.79
+        if initialZ-currentZ>successZthreshold: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
+            bonusreward=(1-(self._envStepCounter/self.StepsPerEpisode))+0.3
             self.doneflag=1
-            self.totalsuccesscounter+=1
-            print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
+            
             
         print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
         #print("   Rewards--Base:",XYdist, " Bonus:",bonusreward," Total:", (XYdist+bonusreward) )
-        
+        if initialZ-currentZ>successZthreshold:
+            self.totalsuccesscounter+=1
+            print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
+            
         #self.currentreward = XYdist + bonusreward         
         
         #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "InitialZ:",initialZ, "currentZ:",currentZ, "Difference",(initialZ-currentZ))
@@ -444,7 +416,7 @@ class UR5Env0(gym.Env):
             self.rewardlist.append(self.currentreward)
             
             self.episodecounter=self.episodecounter+1
-            #print("   Actionlist:",self.actionlist)
+            print("   Actionlist:",self.actionlist)
             if self.episodecounter%20==0 or self.episodecounter==self.TotalEpisodes+1:
                 clear_output(wait = True)   #uncomment to clear output at each reset 
                 print("Ep:",self.episodecounter, "  Total Steps taken:", self.totalstepstaken)

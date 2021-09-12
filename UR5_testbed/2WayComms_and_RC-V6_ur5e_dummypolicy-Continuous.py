@@ -1,16 +1,22 @@
+bot='red'  #'blue'
+print(bot, "robot is being used. Please change the bot variable if this is incorrect")
 import socket
 import numpy as np
 import struct
 from scipy.spatial.transform import Rotation as R
-#from remote_FT_client import RemoteFTclient
+
+if bot=='red':
+    from remote_FT_client import RemoteFTclient
+    FTclient = RemoteFTclient( '192.168.0.103', 10000 )
+    print( FTclient.prxy.system.listMethods() )
 from time import sleep
 import math
 
 HOST2 = '192.168.0.103' #'128.138.224.236'
-PORT2= 65486
+PORT2= 65480
 
-#FTclient = RemoteFTclient( '192.168.0.103', 10000 )
-#print( FTclient.prxy.system.listMethods() )
+
+
 
 def rot2rpy(Rt, degrees=False):
     """ Converts a rotation matrix into rpy / intrinsic xyz euler angle form.
@@ -85,52 +91,75 @@ try:
         print('received {!r}'.format(data))
         """
         if (inputstring=='obs'):
-            data2 = sock.recv(88)#(64) 
-            while data2== b'':
-                data2 = sock.recv(88)#(64)  #48 bytes
+            if bot=='blue':
+                data2 = sock.recv(88)#(64) 
+                while data2== b'':
+                    data2 = sock.recv(88)#(64)  #48 bytes
+                    #print(data2)
                 #print(data2)
-            #print(data2)
-            
-            unpacked = struct.unpack('ffffffffffffffffffffff', data2)
-            #if self.totalstepstaken>=410:
-            #    print("unpacked data: ",unpacked)
-            TransRotatmatrix=np.zeros([4,4])
-            for i in range(4):
-                TransRotatmatrix[i][:]=unpacked[0+(4*i):4+(4*i)]
 
+                unpacked = struct.unpack('ffffffffffffffffffffff', data2)
+                #if self.totalstepstaken>=410:
+                #    print("unpacked data: ",unpacked)
+                TransRotatmatrix=np.zeros([4,4])
+                for i in range(4):
+                    TransRotatmatrix[i][:]=unpacked[0+(4*i):4+(4*i)]
+
+                #print(TransRotatmatrix)
+                rpy=rot2rpy(TransRotatmatrix[0:3,0:3],True)
+                currentX=TransRotatmatrix[0][3]*39.3701  #convert to inches 
+                currentY=TransRotatmatrix[1][3]*39.3701
+                currentZ=TransRotatmatrix[2][3]*39.3701
+                roll=rpy[0]  #In degrees!
+                pitch=rpy[1]
+                yaw=rpy[2]
+                print("currentpose: x",currentX,"y",currentY,"z",currentZ)
+                print("roll",roll,"pitch",pitch,"yaw",yaw)
+
+                forcetorque=[]
+                for j in range(6):
+                    forcetorque.append(unpacked[16+j])
+                print("forcetorque:",forcetorque)
                 
-                
-            #print(TransRotatmatrix)
-            rpy=rot2rpy(TransRotatmatrix[0:3,0:3],True)
-            currentX=TransRotatmatrix[0][3]*39.3701  #convert to inches 
-            currentY=TransRotatmatrix[1][3]*39.3701
-            currentZ=TransRotatmatrix[2][3]*39.3701
-            roll=rpy[0]  #In degrees!
-            pitch=rpy[1]
-            yaw=rpy[2]
-            print("currentpose: x",currentX,"y",currentY,"z",currentZ)
-            print("roll",roll,"pitch",pitch,"yaw",yaw)
-            
-            forcetorque=[]
-            for j in range(6):
-                forcetorque.append(unpacked[16+j])
-            print("forcetorque:",forcetorque)
-            
-            """
-            forcesamples=5
-            FT_list=[]
-            AVG_FT_list=[0]*6  #3 forces 3 torques
-            for i in range(5):  #get 5 force samples
-                FT_list.append(FTclient.get_wrist_force())
-                sleep( 0.020 )            
-            for i in range(len(FT_list)): 
-                #print("i:",i)
-                AVG_FT_list[i]=0
-                for j in range(len(FT_list)):  
-                    AVG_FT_list[i]+=FT_list[j][i]    
-                AVG_FT_list[i]=AVG_FT_list[i]/(len(FT_list))
-            print("Forces and Torques:")
-            print(AVG_FT_list)
+            elif bot=='red':
+                data2 = sock.recv(64)#(64) 
+                while data2== b'':
+                    data2 = sock.recv(64)#(64)  #48 bytes
+                    #print(data2)
+                #print(data2)
+
+                unpacked = struct.unpack('ffffffffffffffff', data2)
+                #if self.totalstepstaken>=410:
+                #    print("unpacked data: ",unpacked)
+                TransRotatmatrix=np.zeros([4,4])
+                for i in range(4):
+                    TransRotatmatrix[i][:]=unpacked[0+(4*i):4+(4*i)]
+
+                #print(TransRotatmatrix)
+                rpy=rot2rpy(TransRotatmatrix[0:3,0:3],True)
+                currentX=TransRotatmatrix[0][3]*39.3701  #convert to inches 
+                currentY=TransRotatmatrix[1][3]*39.3701
+                currentZ=TransRotatmatrix[2][3]*39.3701
+                roll=rpy[0]  #In degrees!
+                pitch=rpy[1]
+                yaw=rpy[2]
+                print("currentpose: x",currentX,"y",currentY,"z",currentZ)
+                print("roll",roll,"pitch",pitch,"yaw",yaw)
+           
+                forcesamples=5
+                FT_list=[]
+                AVG_FT_list=[0]*6  #3 forces 3 torques
+                for i in range(5):  #get 5 force samples
+                    FT_list.append(FTclient.get_wrist_force())
+                    sleep( 0.020 )            
+                for i in range(len(FT_list)): 
+                    #print("i:",i)
+                    AVG_FT_list[i]=0
+                    for j in range(len(FT_list)):  
+                        AVG_FT_list[i]+=FT_list[j][i]    
+                    AVG_FT_list[i]=AVG_FT_list[i]/(len(FT_list))
+                print("Forces and Torques:")
+                print(AVG_FT_list)
             #print( "Bias wrist force" )
             #FTclient.bias_wrist_force()
             #sleep( 3.0 )
@@ -140,7 +169,7 @@ try:
             #Default initial Z is 0.06915259
             #half inserted peg Z is 0.044 ish
             
-            """
+            
             #cylinder above target pos:
             """
             initial=np.array(

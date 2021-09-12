@@ -6,8 +6,8 @@ from scipy.spatial.transform import Rotation as R
 from time import sleep
 import math
 
-HOST2 = '128.138.224.236'#'192.168.0.103'
-PORT2= 65484
+HOST2 = '192.168.0.103' #'128.138.224.236'#
+PORT2= 65489
 
 #FTclient = RemoteFTclient( '192.168.0.103', 10000 )
 #print( FTclient.prxy.system.listMethods() )
@@ -48,6 +48,7 @@ try:
         #while True:
             #while inputstring!='end':
         inputstring=input("") #Press Enter to continue...
+        
         if (inputstring=='h' or inputstring=='j' or inputstring=='k' or inputstring=='l' or 
             inputstring=='u' or inputstring=='o'or inputstring=='y' or inputstring=='i' or 
             inputstring=='z' or inputstring=='x' or inputstring=='d' or inputstring=='c'or

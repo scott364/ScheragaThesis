@@ -6,8 +6,8 @@ from scipy.spatial.transform import Rotation as R
 from time import sleep
 import math
 
-HOST2 = '128.138.224.236'#'192.168.0.103'
-PORT2= 65484
+HOST2 = '192.168.0.103' #'128.138.224.236'#
+PORT2= 65489
 
 #FTclient = RemoteFTclient( '192.168.0.103', 10000 )
 #print( FTclient.prxy.system.listMethods() )
@@ -87,7 +87,12 @@ try:
                 #print(data2)
             #print(data2)
             
-            unpacked = struct.unpack('ffffffffffffffffffffff', data2)
+            unpacked = struct.unpack('ffff
+                                     ffff
+                                     ffff
+                                     ffff
+                                     
+                                     ffffff', data2)
             #if self.totalstepstaken>=410:
             #    print("unpacked data: ",unpacked)
             TransRotatmatrix=np.zeros([4,4])

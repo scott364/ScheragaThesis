@@ -20,9 +20,38 @@ import socket
 import numpy as np
 import struct
 from scipy.spatial.transform import Rotation as R
-from remote_FT_client import RemoteFTclient
 from time import sleep
 import selectors
+
+import time
+
+#Arduino Button
+import serial
+import serial.tools.list_ports
+ports = serial.tools.list_ports.comports()
+#sudo chmod a+rw /dev/ttyACM0
+#print(ports)
+[port.manufacturer for port in ports]
+def find_arduino(port=None):
+    """Get the name of the port that is connected to Arduino."""
+    if port is None:
+        ports = serial.tools.list_ports.comports()
+        for p in ports:
+            if p.manufacturer is not None and "SparkFun" in p.manufacturer:
+                port = p.device
+    return port
+arduinoport = find_arduino()
+print("port=",arduinoport)
+arduinoserial = serial.Serial(arduinoport,9600)
+
+
+bot='red'  #'blue'
+print('the', bot, ' robot is being used. Please change the bot identity variable if this is incorrect')
+if bot=='red':
+    from remote_FT_client import RemoteFTclient
+    FTclient = RemoteFTclient( '192.168.0.103', 10000 )
+    #print( FTclient.prxy.system.listMethods() )
+    FTclient.bias_wrist_force() #Biasing wrist force
 
 HOST_DC = '192.168.0.103'
 PORT_DC= 65485
@@ -35,13 +64,6 @@ print('DC socket connecting to {} port {}'.format(*server_address_DC))
 sock_DC.connect(server_address_DC)
 
 initialrunflag=1   #changed to zero after the first run
-
-""""""
-FTclient = RemoteFTclient( '192.168.0.103', 10000 )
-print( FTclient.prxy.system.listMethods() )
-
-print( "Biasing wrist force" )
-FTclient.bias_wrist_force()
 
 
 def rot2rpy(Rt, degrees=False):
@@ -189,11 +211,11 @@ class UR5Env0(gym.Env):
         
         inputstring='action'
         msgaction=inputstring.encode('ascii')    
-        print("action",action)
-        print("action message",msgaction)
-        sock_DC.send(msgaction)
-        
-        actionbyte=struct.pack('ff',action[0],action[1])
+        #print("action",action)  #action [ 1.         -0.93657553]
+        #print("action message",msgaction) #action message b'action'
+
+        sock_DC.send(msgaction)       
+        actionbyte=struct.pack('dd',action[0],action[1])
         sock_DC.send(actionbyte) 
         #self.actionlist.append(action)
         time.sleep(0.05)  
@@ -252,66 +274,78 @@ class UR5Env0(gym.Env):
         #if self.totalstepstaken>=410:
         #    print("obs")
         inputstring='obs'
-
         msg2=inputstring.encode('ascii')    
         sock_DC.send(msg2)
+        
         #print("sent",inputstring)
-        data2 = sock_DC.recv(88)#64 
-        while data2== b'':
-            data2 = sock_DC.recv(88)#64  #48 bytes
-            #print(data1)
-        #unpacked = struct.unpack('ffffffffffffffff', data2)
-        unpacked = struct.unpack('ffffffffffffffffffffff', data2)
-        #if self.totalstepstaken>=410:
-        #    print("unpacked data: ",unpacked)
-        TransRotatmatrix=np.zeros([4,4])
-        for i in range(4):
-            TransRotatmatrix[i][:]=unpacked[0+(4*i):4+(4*i)]
-        
-            
-        """
-        
-        TransRotatmatrix=np.array([[-0.99934441,-0.00610222  ,0.03568637 ,-0.14532579],
-                       [-0.00426994  ,0.99867947  ,0.05119661 ,-0.30391228],
-                       [-0.03595166  ,0.05101066 ,-0.9980508  , 0.26136942],
-                       [ 0.          ,0.          ,0.          ,1.        ]])
-        
-        """
-        x_pose=TransRotatmatrix[0][3]*39.3701  #convert to inches 
-        y_pose=TransRotatmatrix[1][3]*39.3701
-        z_pose=TransRotatmatrix[2][3]*39.3701
-        rpy=rot2rpy(TransRotatmatrix[0:3,0:3],True)
-        roll=rpy[0]  #In degrees!
-        pitch=rpy[1]
-        yaw=rpy[2]
-        self.currentpose=[x_pose,y_pose,z_pose]#In inches
-        
-        AVG_FT_list=[]
-        for j in range(6):
-                AVG_FT_list.append(unpacked[16+j])
-            #print("forcetorque:",forcetorque)
-        
-    
-        """
-        forcesamples=5
-        FT_list=[]
-        AVG_FT_list=[0]*6  #3 forces 3 torques
-        for i in range(5):  #get 5 force samples
-            FT_list.append(FTclient.get_wrist_force())
-            sleep( 0.020 )            
-        for i in range(len(FT_list)): 
-            #print("i:",i)
-            AVG_FT_list[i]=0
-            for j in range(len(FT_list)):  
-                AVG_FT_list[i]+=FT_list[j][i]    
+        if bot=='red':
+            data2 = sock_DC.recv(64)#64 
+            while data2== b'':
+                data2 = sock_DC.recv(64)#64  #48 bytes
+                #print(data1)
+            #unpacked = struct.unpack('ffffffffffffffff', data2)
+            unpacked = struct.unpack('ffffffffffffffff', data2)
+            #if self.totalstepstaken>=410:
+            #    print("unpacked data: ",unpacked)
+            TransRotatmatrix=np.zeros([4,4])
+            for i in range(4):
+                TransRotatmatrix[i][:]=unpacked[0+(4*i):4+(4*i)]
 
-            AVG_FT_list[i]=AVG_FT_list[i]/(len(FT_list))
-        """    
+            x_pose=TransRotatmatrix[0][3]*39.3701  #convert to inches 
+            y_pose=TransRotatmatrix[1][3]*39.3701
+            z_pose=TransRotatmatrix[2][3]*39.3701
+            rpy=rot2rpy(TransRotatmatrix[0:3,0:3],True)
+            roll=rpy[0]  #In degrees!
+            pitch=rpy[1]
+            yaw=rpy[2]
+            self.currentpose=[x_pose,y_pose,z_pose]#In inches
+
+            forcesamples=5
+            FT_list=[]
+            AVG_FT_list=[0]*6  #3 forces 3 torques
+            for i in range(5):  #get 5 force samples
+                FT_list.append(FTclient.get_wrist_force())
+                sleep( 0.020 )            
+            for i in range(len(FT_list)): 
+                #print("i:",i)
+                AVG_FT_list[i]=0
+                for j in range(len(FT_list)):  
+                    AVG_FT_list[i]+=FT_list[j][i]    
+
+                AVG_FT_list[i]=AVG_FT_list[i]/(len(FT_list))
+                
+        elif bot=='blue':
             
+            data2 = sock_DC.recv(88)#64 
+            while data2== b'':
+                data2 = sock_DC.recv(88)#64  #48 bytes
+                #print(data1)
+            #unpacked = struct.unpack('ffffffffffffffff', data2)
+            unpacked = struct.unpack('ffffffffffffffffffffff', data2)
+            #if self.totalstepstaken>=410:
+            #    print("unpacked data: ",unpacked)
+            TransRotatmatrix=np.zeros([4,4])
+            for i in range(4):
+                TransRotatmatrix[i][:]=unpacked[0+(4*i):4+(4*i)]
+
+            x_pose=TransRotatmatrix[0][3]*39.3701  #convert to inches 
+            y_pose=TransRotatmatrix[1][3]*39.3701
+            z_pose=TransRotatmatrix[2][3]*39.3701
+            rpy=rot2rpy(TransRotatmatrix[0:3,0:3],True)
+            roll=rpy[0]  #In degrees!
+            pitch=rpy[1]
+            yaw=rpy[2]
+            self.currentpose=[x_pose,y_pose,z_pose]#In inches
+            
+            #For the blue robot, observation messages contain force torque data. 
+            AVG_FT_list=[]
+            for j in range(6):
+                    AVG_FT_list.append(unpacked[16+j])
+                #print("forcetorque:",forcetorque)
+
         #print("x",x_pose,"y",y_pose,"z",z_pose)
         #print("roll",roll,"pitch",pitch,"yaw",yaw)
         #print("Forces and Torques:", AVG_FT_list)
-        
         
         """  NEED TO RE-SAMPLE THE VALUES AND FIND A WAY TO ZERO THE FORCES AND TORQUES!!
         self.xforcemin=-5
@@ -327,8 +361,7 @@ class UR5Env0(gym.Env):
         self.pitchtorquemax=1
         self.yawtorquemin=-.1
         self.yawtorquemax=.1
-        """
-        
+        """ 
         
         xforce_normalized=((AVG_FT_list[0]-self.xforcemin)/(self.xforcemax-self.xforcemin)*2)-1
         yforce_normalized=((AVG_FT_list[1]-self.yforcemin)/(self.yforcemax-self.yforcemin)*2)-1
@@ -360,10 +393,10 @@ class UR5Env0(gym.Env):
         self.currentreward=0 
         
 
-        XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula
+        XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula from initial point
     
- 
-        if XYdist>0.2 and (1.96-currentZ)<0.1 :
+         
+        if XYdist>0.2:  #if too far away from initial, set reward to -1./ 
             self.currentreward =-1
         else: 
             #2.620986220472 initial z pose
@@ -371,18 +404,24 @@ class UR5Env0(gym.Env):
             
             self.currentreward =1.96-currentZ  #2.16 seems to be z position of just on the plastic though
             
-        successZthreshold=0.79
-        if initialZ-currentZ>successZthreshold: #1 inch  #DOUBLE CHECK THAT  THIS IS IN INCHES NOT METERS OR MM!!!!
-            bonusreward=(1-(self._envStepCounter/self.StepsPerEpisode))+0.3
+            #self.currentreward=self.currentreward+((self.StepsPerEpisode-self._envStepCounter)/self.StepsPerEpisode)
+            
+        #successZthreshold=0.79
+        
+        arduinoserial.write(b'q\n')  #request a 0 or 1 from the arduino button
+        arduinobuttonstatus = arduinoserial.readline()
+  
+        #print(b)
+        if arduinobuttonstatus== b'1\r\n':
+            print("BUTTON PRESSED! Episode over!")
+            self.currentreward=self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success
             self.doneflag=1
-            
-            
-        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
-        #print("   Rewards--Base:",XYdist, " Bonus:",bonusreward," Total:", (XYdist+bonusreward) )
-        if initialZ-currentZ>successZthreshold:
             self.totalsuccesscounter+=1
             print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
             
+        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
+        #print("   Rewards--Base:",XYdist, " Bonus:",bonusreward," Total:", (XYdist+bonusreward) )
+        
         #self.currentreward = XYdist + bonusreward         
         
         #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "InitialZ:",initialZ, "currentZ:",currentZ, "Difference",(initialZ-currentZ))
@@ -405,7 +444,7 @@ class UR5Env0(gym.Env):
             self.rewardlist.append(self.currentreward)
             
             self.episodecounter=self.episodecounter+1
-            print("   Actionlist:",self.actionlist)
+            #print("   Actionlist:",self.actionlist)
             if self.episodecounter%20==0 or self.episodecounter==self.TotalEpisodes+1:
                 clear_output(wait = True)   #uncomment to clear output at each reset 
                 print("Ep:",self.episodecounter, "  Total Steps taken:", self.totalstepstaken)
