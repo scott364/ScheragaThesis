@@ -25,7 +25,7 @@ from time import sleep
 import selectors
 
 HOST_DC = '192.168.0.103'
-PORT_DC= 65481
+PORT_DC= 65485
 
 
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -68,8 +68,12 @@ class UR5Env0(gym.Env):
         print("TotalEpisodes:",TotalEpisodes, "   StepsPerEpisode:",StepsPerEpisode)
         self._observation = []
         #self.action_space = spaces.Discrete(9)#Generates number between 0 and 9
-        self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
-
+        #self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
+        
+        #9-8-2021:  Normalize the box- style action space!!  min = -1, max -1
+        self.action_space = spaces.Box(np.array([-1,-1]),np.array([1,1]))
+        
+    
         #self.action_space = spaces.Box(np.array([-0.01, -0.01, -0.01]), """ x, y, z min """
         #                                    np.array([0.01, 0.01, 0.01])) # x, y, z max
         #self.observation_space = spaces.Box(np.array([-100,-100,-100,-100,-100, -30, -30]), 
@@ -78,14 +82,6 @@ class UR5Env0(gym.Env):
         self.observation_space = spaces.Box(np.array([-5,-5,-25,-1,-1,-8.5, -20.5]), 
                                             np.array([5,  5,  0, 1, 1,-6.5,-18.5])) # 5 forcetorque, xyz pose
         
-        
-
-       
-        
-        """
-        self.observation_space = spaces.Box(np.array([-30, -30]), 
-                                            np.array([30, 30])) # 6 forcetorque, xy pose                                           
-        """
         """
         target is at 
         x -9.334348196083308 y -23.681130581510068 z 2.5003196929477154
@@ -161,7 +157,7 @@ class UR5Env0(gym.Env):
         self.totalstepstaken+=1
         done = self._compute_done()
         return np.array(self._observation), reward, done, {}
-    
+    """
     def motionselector(self,action):
     
         if action==0:  
@@ -187,7 +183,21 @@ class UR5Env0(gym.Env):
         sock_DC.send(command_msg) 
         self.actionlist.append(action)
         time.sleep(0.05)  
-                
+    """    
+    
+    def motionselector(self,action):
+        
+        inputstring='action'
+        msgaction=inputstring.encode('ascii')    
+        print("action",action)
+        print("action message",msgaction)
+        sock_DC.send(msgaction)
+        
+        actionbyte=struct.pack('ff',action[0],action[1])
+        sock_DC.send(actionbyte) 
+        #self.actionlist.append(action)
+        time.sleep(0.05)  
+        
     def reset(self):    
         self._envStepCounter=1
         self.doneflag=0
@@ -246,9 +256,9 @@ class UR5Env0(gym.Env):
         msg2=inputstring.encode('ascii')    
         sock_DC.send(msg2)
         #print("sent",inputstring)
-        data2 = sock_DC.recv(64) 
+        data2 = sock_DC.recv(88)#64 
         while data2== b'':
-            data2 = sock_DC.recv(64)  #48 bytes
+            data2 = sock_DC.recv(88)#64  #48 bytes
             #print(data1)
         #unpacked = struct.unpack('ffffffffffffffff', data2)
         unpacked = struct.unpack('ffffffffffffffffffffff', data2)
