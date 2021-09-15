@@ -52,6 +52,7 @@ if bot=='red':
     FTclient = RemoteFTclient( '192.168.0.103', 10000 )
     #print( FTclient.prxy.system.listMethods() )
     FTclient.bias_wrist_force() #Biasing wrist force
+    
 
 HOST_DC = '192.168.0.103'
 PORT_DC= 65485
@@ -211,11 +212,11 @@ class UR5Env0(gym.Env):
         
         inputstring='action'
         msgaction=inputstring.encode('ascii')    
-        #print("action",action)  #action [ 1.         -0.93657553]
+        print("action",action)  #action [ 1.         -0.93657553]
         #print("action message",msgaction) #action message b'action'
 
         sock_DC.send(msgaction)       
-        actionbyte=struct.pack('dd',action[0],action[1])
+        actionbyte=struct.pack('ff',action[0],action[1])
         sock_DC.send(actionbyte) 
         #self.actionlist.append(action)
         time.sleep(0.05)  

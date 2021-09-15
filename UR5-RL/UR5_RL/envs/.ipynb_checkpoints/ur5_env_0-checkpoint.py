@@ -22,8 +22,10 @@ import struct
 from scipy.spatial.transform import Rotation as R
 from time import sleep
 import selectors
-
+import csv
 import time
+from datetime import date
+
 
 #Arduino Button
 import serial
@@ -52,18 +54,23 @@ if bot=='red':
     FTclient = RemoteFTclient( '192.168.0.103', 10000 )
     #print( FTclient.prxy.system.listMethods() )
     FTclient.bias_wrist_force() #Biasing wrist force
+    
 
 HOST_DC = '192.168.0.103'
 PORT_DC= 65485
 
-
+#standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #sock_DC.setblocking(False)
 server_address_DC = (HOST_DC, PORT_DC)# Connect the socket to the port where the server is listening
 print('DC socket connecting to {} port {}'.format(*server_address_DC))
 sock_DC.connect(server_address_DC)
 
+
+
 initialrunflag=1   #changed to zero after the first run
+
+
 
 
 def rot2rpy(Rt, degrees=False):
@@ -153,6 +160,24 @@ class UR5Env0(gym.Env):
         self.totalstepstaken=0
         self.totalsuccesscounter=0
         
+        self.headers=[]
+        for i in range(self.StepsPerEpisode):
+            label=str(i)
+            self.headers.append("header"+label)
+        today = date.today()    
+        todaydate = today.strftime("%m_%d_%Y")
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_"+todaydate+'.csv'    
+        self.rewardlistfilename="rewardlist_"+todaydate+'.csv'  
+        
+        with open(self.forcetorquebuttonresultsfilename, mode='w') as outputfile:
+                writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow(self.headers)
+                
+        with open(self.rewardlistfilename, mode='w') as outputfile:
+                writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow(["Rewardlist"])
+        
+        
         self.resetEnvironment()
         time.sleep(0.1) 
 
@@ -211,11 +236,11 @@ class UR5Env0(gym.Env):
         
         inputstring='action'
         msgaction=inputstring.encode('ascii')    
-        #print("action",action)  #action [ 1.         -0.93657553]
+        print("action",action)  #action [ 1.         -0.93657553]
         #print("action message",msgaction) #action message b'action'
 
         sock_DC.send(msgaction)       
-        actionbyte=struct.pack('dd',action[0],action[1])
+        actionbyte=struct.pack('ff',action[0],action[1])
         sock_DC.send(actionbyte) 
         #self.actionlist.append(action)
         time.sleep(0.05)  
@@ -266,7 +291,13 @@ class UR5Env0(gym.Env):
         #self.zstart=0.82#0.87#0.95
     
         self.actionlist=[]
-    
+        self.xforcelist=[]
+        self.yforcelist=[]
+        self.zforcelist=[]
+        self.rolltorquelist=[]
+        self.pitchtorquelist=[]
+        self.yawtorquelist=[]
+        self.buttonoutputlist=[]
 
     def _compute_observation(self):
         
@@ -372,7 +403,9 @@ class UR5Env0(gym.Env):
         
         #return[AVG_FT_list[0],AVG_FT_list[1],AVG_FT_list[2],
         #           AVG_FT_list[3],AVG_FT_list[4],x_pose,y_pose]
-    
+        
+        
+        
         return[xforce_normalized,yforce_normalized,zforce_normalized,
                    rolltorque_normalized,pitchtorque_normalized,x_pose,y_pose]
     
@@ -381,7 +414,16 @@ class UR5Env0(gym.Env):
     def _compute_reward(self):
         #if self.totalstepstaken>=410:
         #        print("compute reward called, about to call 'obs'")
-        a=self._compute_observation()
+        rewardobs=self._compute_observation()
+        
+        
+        self.xforcelist.append(rewardobs[0])
+        self.yforcelist.append(rewardobs[1])
+        self.zforcelist.append(rewardobs[2])
+        self.rolltorquelist.append(rewardobs[3])
+        self.pitchtorquelist.append(rewardobs[4])
+        #self.yawtorquelist.append(rewardobs[5])
+        
         [currentX,currentY,currentZ]=self.currentpose  #in inches 
      
         
@@ -414,12 +456,19 @@ class UR5Env0(gym.Env):
         #print(b)
         if arduinobuttonstatus== b'1\r\n':
             print("BUTTON PRESSED! Episode over!")
+            self.buttonoutputlist.append(1)
+            
             self.currentreward=self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success
             self.doneflag=1
             self.totalsuccesscounter+=1
             print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
             
+        elif arduinobuttonstatus== b'0\r\n':
+                self.buttonoutputlist.append(0) 
+                
         print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
+        
+        
         #print("   Rewards--Base:",XYdist, " Bonus:",bonusreward," Total:", (XYdist+bonusreward) )
         
         #self.currentreward = XYdist + bonusreward         
@@ -440,9 +489,24 @@ class UR5Env0(gym.Env):
         if self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1:    
             #print("Episode", self.episodecounter, "over. envStepCounter:", self._envStepCounter," StepsPerEpisode:" , self.StepsPerEpisode)
             #print("RESET!-env counter at max", "final reward value:",self.currentreward)
-
-            self.rewardlist.append(self.currentreward)
             
+            with open(self.forcetorquebuttonresultsfilename, mode='a') as outputfile:
+                writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+                #employee_writer.writerow(['John Smith', 'Accounting', 'November'])
+                #employee_writer.writerow(['Erica Meyers', 'IT', 'March'])
+                writer.writerow(self.xforcelist)
+                writer.writerow(self.yforcelist)
+                writer.writerow(self.zforcelist)
+                writer.writerow(self.rolltorquelist)
+                writer.writerow(self.pitchtorquelist)
+                writer.writerow(self.buttonoutputlist)
+                
+            with open(self.rewardlistfilename, mode='a') as outputfile:
+                    writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                    writer.writerow([self.currentreward])
+                    
+            self.rewardlist.append(self.currentreward)
             self.episodecounter=self.episodecounter+1
             #print("   Actionlist:",self.actionlist)
             if self.episodecounter%20==0 or self.episodecounter==self.TotalEpisodes+1:
@@ -452,11 +516,12 @@ class UR5Env0(gym.Env):
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-0.5,0.5))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-0.5,1.0))
 
                 display(self.fig)
                 
-
+                
+            
             
             #if self.episodecounter%10==0:
             #    ts = time.time()

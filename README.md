@@ -13,7 +13,10 @@ conda install jupyter
 
 conda install jupyterlab
 
+conda install pandas
+
 pip install gym  pybullet
+
 
 
 
