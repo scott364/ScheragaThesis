@@ -57,7 +57,7 @@ if bot=='red':
     
 
 HOST_DC = '192.168.0.103'
-PORT_DC= 65488
+PORT_DC= 65487
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -424,12 +424,9 @@ class UR5Env0(gym.Env):
     
         #if peg is too far away from initial, set reward to -1
         if XYdist>0.25:  
-            self.currentreward =-100
+            self.currentreward =-1
         else: 
-            self.currentreward = -2
-            self.currentreward+=  (initialZ-currentZ)
-            
-             #2.16 seems to be z position of just on the plastic though
+            self.currentreward =1.96-currentZ  #2.16 seems to be z position of just on the plastic though
             #2.620986220472 initial z pose
             #2.16  z at contacting the table w/o peg/gripper sliding 
 
@@ -441,8 +438,7 @@ class UR5Env0(gym.Env):
             print("BUTTON PRESSED! Episode over!")
             self.buttonoutputlist.append(1)
             
-            self.currentreward=100
-            #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
+            self.currentreward=self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases the earlier in the episode it happens. 
             self.doneflag=1
             self.totalsuccesscounter+=1
             print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
@@ -487,7 +483,7 @@ class UR5Env0(gym.Env):
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-51,101))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-0.5,1.0))
 
                 display(self.fig)
                 

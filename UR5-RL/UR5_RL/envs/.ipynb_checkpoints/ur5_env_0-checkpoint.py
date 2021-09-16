@@ -57,7 +57,7 @@ if bot=='red':
     
 
 HOST_DC = '192.168.0.103'
-PORT_DC= 65485
+PORT_DC= 65488
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -69,7 +69,6 @@ sock_DC.connect(server_address_DC)
 
 
 initialrunflag=1   #changed to zero after the first run
-
 
 
 
@@ -89,18 +88,22 @@ def rpy2rot(rpy, degrees=False):
     """
     return R.from_euler('xyz', rpy, degrees=degrees).as_matrix()
 
-#class BalancebotEnv(gym.Env):
+
 class UR5Env0(gym.Env):
 
 
-    def __init__(self,TotalEpisodes=100,StepsPerEpisode=10):
+    def __init__(self,TotalEpisodes=100,StepsPerEpisode=10,continuousactionspace=False):
         print("TotalEpisodes:",TotalEpisodes, "   StepsPerEpisode:",StepsPerEpisode)
         self._observation = []
-        #self.action_space = spaces.Discrete(9)#Generates number between 0 and 9
-        #self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
+        
+        self.continuousactionspace=continuousactionspace
+        
+        if self.continuousactionspace==False:
+            self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
         
         #9-8-2021:  Normalize the box- style action space!!  min = -1, max -1
-        self.action_space = spaces.Box(np.array([-1,-1]),np.array([1,1]))
+        if self.continuousactionspace==True:
+            self.action_space = spaces.Box(np.array([-1,-1]),np.array([1,1]))
         
     
         #self.action_space = spaces.Box(np.array([-0.01, -0.01, -0.01]), """ x, y, z min """
@@ -111,29 +114,7 @@ class UR5Env0(gym.Env):
         self.observation_space = spaces.Box(np.array([-5,-5,-25,-1,-1,-8.5, -20.5]), 
                                             np.array([5,  5,  0, 1, 1,-6.5,-18.5])) # 5 forcetorque, xyz pose
         
-        """
-        target is at 
-        x -9.334348196083308 y -23.681130581510068 z 2.5003196929477154
-        roll 179.26909783765905 pitch 2.003501129340695 yaw -179.58695200183655
-        Forces and Torques:
-        [-0.06000000000000001, -0.02, 0.36000000000000004, 0.023599999999999996, 0.0034000000000000002, 0]
-
-
-        cylinder above target pos:
-        [[-0.99934544 -0.00730877  0.0354299  -0.19068683]
-         [-0.00689006  0.99990515  0.01192549 -0.49560643]
-         [-0.0355137   0.01167357 -0.99930101  0.10501393]
-         [ 0.          0.          0.          1.        ]]
-         
-         cylinder half-inserted pose:
-         [[-0.99934435 -0.0073168   0.0354588  -0.19065135]
-         [-0.00690059  0.99990602  0.01184609 -0.49437242]
-         [-0.03554215  0.01159364 -0.99930093  0.07050386]
-         [ 0.          0.          0.          1.        ]]
-
-
-
-        """
+        
         self.TotalEpisodes=TotalEpisodes
         self.StepsPerEpisode=StepsPerEpisode
         self.xforcemin=-5
@@ -150,10 +131,10 @@ class UR5Env0(gym.Env):
         self.yawtorquemin=-.1
         self.yawtorquemax=.1
         
-        
         self.fig, (self.ax1) = plt.subplots(1,figsize=(7,7)) # was 8,8
 
-        self.curr_action_config = None #when the sim starts, there is no current target. needs to call motion selector to get a target
+        self.curr_action_config = None 
+
         self.episodecounter=1
         self.episodeinitialobsflag=1
         self.rewardlist=[]
@@ -185,16 +166,13 @@ class UR5Env0(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
     
-    #def _step(self, action):
+    
     def step(self, action):
 
         # we can still check if we violate a torque limit etc and if that happens, we can collect an observation, reward and make sure done is now true so we move onto a new action or terminate the current policy rollout.
         self.motionselector(action)
         self._observation = self._compute_observation()  
         reward = self._compute_reward()
-        
-        #if (wrist_forcetorque[2]<-20   or wrist_forcetorque[2]>20):
-        #    done=True
         
             
         #print("step:", self._envStepCounter, "action:",action, "observation",[self.xcurrent,self.ycurrent,self.zcurrent]," reward",self.currentreward )
@@ -204,49 +182,51 @@ class UR5Env0(gym.Env):
         self.totalstepstaken+=1
         done = self._compute_done()
         return np.array(self._observation), reward, done, {}
-    """
-    def motionselector(self,action):
     
-        if action==0:  
-            inputstring='h'
-            #if self.totalstepstaken>=410:
-            #    print("action taken:", inputstring) 
-        if action==1: 
-            inputstring='k'
-            #if self.totalstepstaken>=410:
-            #    print("action taken:", inputstring) 
-        if action==2:  
-            inputstring='u'
-            #if self.totalstepstaken>=410:
-            #    print("action taken:", inputstring) 
-        if action==3:  
-            inputstring='j'
-            #if self.totalstepstaken>=410:
-            #    print("action taken:", inputstring) 
-        if action==4:  
-            inputstring='l'  #moves straight down'    
-            
-        command_msg=inputstring.encode('ascii')    
-        sock_DC.send(command_msg) 
-        self.actionlist.append(action)
-        time.sleep(0.05)  
-    """    
     
     def motionselector(self,action):
-        
-        inputstring='action'
-        msgaction=inputstring.encode('ascii')    
-        print("action",action)  #action [ 1.         -0.93657553]
-        #print("action message",msgaction) #action message b'action'
+        if self.continuousactionspace==False:
+            #print("action",action)
+            if action==0:  
+                inputstring='h'
+                #if self.totalstepstaken>=410:
+                #    print("action taken:", inputstring) 
+            if action==1: 
+                inputstring='k'
+                #if self.totalstepstaken>=410:
+                #    print("action taken:", inputstring) 
+            if action==2:  
+                inputstring='u'
+                #if self.totalstepstaken>=410:
+                #    print("action taken:", inputstring) 
+            if action==3:  
+                inputstring='j'
+                #if self.totalstepstaken>=410:
+                #    print("action taken:", inputstring) 
+            if action==4:  
+                inputstring='l'  #moves straight down'    
 
-        sock_DC.send(msgaction)       
-        actionbyte=struct.pack('ff',action[0],action[1])
-        sock_DC.send(actionbyte) 
-        #self.actionlist.append(action)
-        time.sleep(0.05)  
-        
+            command_msg=inputstring.encode('ascii')    
+            sock_DC.send(command_msg) 
+            self.actionlist.append(action)
+            time.sleep(0.05)  
+      
+        if self.continuousactionspace==True:
+            inputstring='action'
+            msgaction=inputstring.encode('ascii')    
+            print("action",action)  #action [ 1.         -0.93657553]
+            #print("action message",msgaction) #action message b'action'
+
+            sock_DC.send(msgaction)       
+            actionbyte=struct.pack('ff',action[0],action[1])
+            sock_DC.send(actionbyte) 
+            #self.actionlist.append(action)
+            time.sleep(0.05)  
+
+    
     def reset(self):    
         self._envStepCounter=1
+        self.initialaction=1
         self.doneflag=0
         #if self.totalstepstaken>=410:
         #    print("reset")
@@ -405,11 +385,16 @@ class UR5Env0(gym.Env):
         #           AVG_FT_list[3],AVG_FT_list[4],x_pose,y_pose]
         
         
-        
-        return[xforce_normalized,yforce_normalized,zforce_normalized,
-                   rolltorque_normalized,pitchtorque_normalized,x_pose,y_pose]
-    
-     
+        if self.initialaction==1:
+            self.initialaction=0 
+            return[xforce_normalized,yforce_normalized,zforce_normalized,
+                       rolltorque_normalized,pitchtorque_normalized,0,0] 
+            #Initial difference in pose is 0, as it is before first action
+            
+        elif self.initialaction==0:
+            [initialX,initialY,initialZ]=self.episodeinitialpose #in inches 
+            return[xforce_normalized,yforce_normalized,zforce_normalized,
+                       rolltorque_normalized,pitchtorque_normalized,x_pose-initialX,y_pose-initialY]
     
     def _compute_reward(self):
         #if self.totalstepstaken>=410:
@@ -437,55 +422,43 @@ class UR5Env0(gym.Env):
 
         XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula from initial point
     
-         
-        if XYdist>0.2:  #if too far away from initial, set reward to -1./ 
-            self.currentreward =-1
+        #if peg is too far away from initial, set reward to -1
+        if XYdist>0.25:  
+            self.currentreward =-100
         else: 
+            self.currentreward = -2
+            self.currentreward+=  (initialZ-currentZ)
+            
+             #2.16 seems to be z position of just on the plastic though
             #2.620986220472 initial z pose
             #2.16  z at contacting the table w/o peg/gripper sliding 
-            
-            self.currentreward =1.96-currentZ  #2.16 seems to be z position of just on the plastic though
-            
-            #self.currentreward=self.currentreward+((self.StepsPerEpisode-self._envStepCounter)/self.StepsPerEpisode)
-            
-        #successZthreshold=0.79
-        
-        arduinoserial.write(b'q\n')  #request a 0 or 1 from the arduino button
+
+        #request a 0 or 1 from the arduino button   
+        arduinoserial.write(b'q\n')  
         arduinobuttonstatus = arduinoserial.readline()
-  
-        #print(b)
+
         if arduinobuttonstatus== b'1\r\n':
             print("BUTTON PRESSED! Episode over!")
             self.buttonoutputlist.append(1)
             
-            self.currentreward=self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success
+            self.currentreward=100
+            #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
             self.doneflag=1
             self.totalsuccesscounter+=1
             print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
             
-        elif arduinobuttonstatus== b'0\r\n':
+        elif arduinobuttonstatus== b'0\r\n':  #If not
                 self.buttonoutputlist.append(0) 
                 
         print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
         
-        
-        #print("   Rewards--Base:",XYdist, " Bonus:",bonusreward," Total:", (XYdist+bonusreward) )
-        
-        #self.currentreward = XYdist + bonusreward         
-        
-        #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "InitialZ:",initialZ, "currentZ:",currentZ, "Difference",(initialZ-currentZ))
-        #check for success condition, and if success, add bonus reward :)
-        
-        
-        
+
         return self.currentreward 
     
 
     def _compute_done(self):
-        #print(f"COMPUTE DONE? Episode: {self.episodecounter} step: {self._envStepCounter} Total Steps taken: {self.totalstepstaken} " )
         # - done, a boolean, value that is TRUE if the environment reached an endpoint, and should be reset, or FALSE otherwise;
         
-         #system whent 'home" 39 times
         if self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1:    
             #print("Episode", self.episodecounter, "over. envStepCounter:", self._envStepCounter," StepsPerEpisode:" , self.StepsPerEpisode)
             #print("RESET!-env counter at max", "final reward value:",self.currentreward)
@@ -493,8 +466,6 @@ class UR5Env0(gym.Env):
             with open(self.forcetorquebuttonresultsfilename, mode='a') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-                #employee_writer.writerow(['John Smith', 'Accounting', 'November'])
-                #employee_writer.writerow(['Erica Meyers', 'IT', 'March'])
                 writer.writerow(self.xforcelist)
                 writer.writerow(self.yforcelist)
                 writer.writerow(self.zforcelist)
@@ -508,7 +479,7 @@ class UR5Env0(gym.Env):
                     
             self.rewardlist.append(self.currentreward)
             self.episodecounter=self.episodecounter+1
-            #print("   Actionlist:",self.actionlist)
+            print("   Actionlist:",self.actionlist)
             if self.episodecounter%20==0 or self.episodecounter==self.TotalEpisodes+1:
                 clear_output(wait = True)   #uncomment to clear output at each reset 
                 print("Ep:",self.episodecounter, "  Total Steps taken:", self.totalstepstaken)
@@ -516,7 +487,7 @@ class UR5Env0(gym.Env):
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-0.5,1.0))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-51,101))
 
                 display(self.fig)
                 
