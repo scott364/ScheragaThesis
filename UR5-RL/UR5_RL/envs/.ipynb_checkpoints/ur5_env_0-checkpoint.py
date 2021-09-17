@@ -424,7 +424,7 @@ class UR5Env0(gym.Env):
     
         #if peg is too far away from initial, set reward to -1
         if XYdist>0.25:  
-            self.currentreward =-100
+            self.currentreward =-2
         else: 
             self.currentreward = -2
             self.currentreward+=  (initialZ-currentZ)
@@ -437,7 +437,7 @@ class UR5Env0(gym.Env):
             print("BUTTON PRESSED! Episode over!")
             self.buttonoutputlist.append(1)
             
-            self.currentreward=100
+            self.currentreward=2
             #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
             self.doneflag=1
             self.totalsuccesscounter+=1
@@ -483,7 +483,7 @@ class UR5Env0(gym.Env):
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-101,101))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-3,3))
 
                 display(self.fig)
                 
@@ -512,6 +512,6 @@ class UR5Env0(gym.Env):
         """    
         #if self._envStepCounter >= self.StepsPerEpisode:
         #    print ("Episode done at step", self._envStepCounter )
-        
+        print("done status:",(self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1))
         return  self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1#self.currentreward > -0.001 or
     

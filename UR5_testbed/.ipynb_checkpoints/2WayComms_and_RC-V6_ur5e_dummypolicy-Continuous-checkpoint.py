@@ -13,7 +13,7 @@ from time import sleep
 import math
 
 HOST2 = '192.168.0.103' #'128.138.224.236'
-PORT2= 65488
+PORT2= 65489
 
 
 
