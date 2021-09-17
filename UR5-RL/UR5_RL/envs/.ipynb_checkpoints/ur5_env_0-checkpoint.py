@@ -57,7 +57,7 @@ if bot=='red':
     
 
 HOST_DC = '192.168.0.103'
-PORT_DC= 65488
+PORT_DC= 65489
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -428,10 +428,6 @@ class UR5Env0(gym.Env):
         else: 
             self.currentreward = -2
             self.currentreward+=  (initialZ-currentZ)
-            
-             #2.16 seems to be z position of just on the plastic though
-            #2.620986220472 initial z pose
-            #2.16  z at contacting the table w/o peg/gripper sliding 
 
         #request a 0 or 1 from the arduino button   
         arduinoserial.write(b'q\n')  
@@ -487,7 +483,7 @@ class UR5Env0(gym.Env):
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-51,101))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-101,101))
 
                 display(self.fig)
                 
