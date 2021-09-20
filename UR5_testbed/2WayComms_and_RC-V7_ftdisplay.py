@@ -82,7 +82,7 @@ try:
             #while True:
                 #while inputstring!='end':
             inputstring=input("") #Press Enter to continue...
-            if (inputstring=='datareset'):
+            if (inputstring=='reset'):
                 FT_list_x=[]
                 FT_list_y=[]
                 FT_list_z=[]
@@ -177,13 +177,15 @@ try:
                     FT_list_yaw.append(forcetorque[5])
 
                     fig = plt.figure()
-                    plt.plot(range(len(FT_list_x)),FT_list_x, label="force:x")
-                    plt.plot(range(len(FT_list_x)),FT_list_y, label="force:y")
-                    plt.plot(range(len(FT_list_x)),FT_list_z, label="force:z")
-                    plt.plot(range(len(FT_list_x)),FT_list_roll, label="torque:roll")
-                    plt.plot(range(len(FT_list_x)),FT_list_pitch, label="torque:pitch")
-                    plt.plot(range(len(FT_list_x)),buttonoutputlist, color='black',label="0/1 button output",linewidth=5.0)
-
+                    ax = fig.add_subplot(1, 1, 1)
+                    ax.plot(range(len(FT_list_x)),FT_list_x, label="force:x")
+                    ax.plot(range(len(FT_list_x)),FT_list_y, label="force:y")
+                    ax.plot(range(len(FT_list_x)),FT_list_z, label="force:z")
+                    ax.plot(range(len(FT_list_x)),FT_list_roll, label="torque:roll")
+                    ax.plot(range(len(FT_list_x)),FT_list_pitch, label="torque:pitch")
+                    ax.plot(range(len(FT_list_x)),buttonoutputlist, color='black',label="0/1 button output",linewidth=5.0)
+                    handles, labels = ax.get_legend_handles_labels()
+                    ax.legend(handles, labels,loc='lower left')
                     plt.show()
 
                 elif bot=='red':
@@ -234,15 +236,16 @@ try:
                     FT_list_yaw.append(AVG_FT_list[5])
 
                     fig = plt.figure()
-                    plt.plot(range(len(FT_list_x)),FT_list_x, label="force:x")
-                    plt.plot(range(len(FT_list_x)),FT_list_y, label="force:y")
-                    plt.plot(range(len(FT_list_x)),FT_list_z, label="force:z")
-                    plt.plot(range(len(FT_list_x)),FT_list_roll, label="torque:roll")
-                    plt.plot(range(len(FT_list_x)),FT_list_pitch, label="torque:pitch")
-                    plt.plot(range(len(FT_list_x)),buttonoutputlist, color='black',label="0/1 button output",linewidth=5.0)
-
-
-
+                    ax = fig.add_subplot(1, 1, 1)
+                    ax.plot(range(len(FT_list_x)),FT_list_x, label="force:x")
+                    ax.plot(range(len(FT_list_x)),FT_list_y, label="force:y")
+                    ax.plot(range(len(FT_list_x)),FT_list_z, label="force:z")
+                    ax.plot(range(len(FT_list_x)),FT_list_roll, label="torque:roll")
+                    ax.plot(range(len(FT_list_x)),FT_list_pitch, label="torque:pitch")
+                    ax.plot(range(len(FT_list_x)),buttonoutputlist, color='black',label="0/1 button output",linewidth=5.0)
+                    handles, labels = ax.get_legend_handles_labels()
+                    ax.legend(handles, labels,loc='lower left')
+                    plt.show()
 
     
 finally:

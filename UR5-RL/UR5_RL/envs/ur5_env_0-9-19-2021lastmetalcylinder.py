@@ -57,7 +57,7 @@ if bot=='red':
     
 
 HOST_DC = '192.168.0.103'
-PORT_DC= 65482
+PORT_DC= 65489
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -99,7 +99,7 @@ class UR5Env0(gym.Env):
         self.continuousactionspace=continuousactionspace
         
         if self.continuousactionspace==False:
-            self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
+            self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
         
         #9-8-2021:  Normalize the box- style action space!!  min = -1, max -1
         if self.continuousactionspace==True:
@@ -117,18 +117,17 @@ class UR5Env0(gym.Env):
         
         self.TotalEpisodes=TotalEpisodes
         self.StepsPerEpisode=StepsPerEpisode
+        self.xforcemin=-5
+        self.xforcemax=5
+        self.yforcemin=-5
+        self.yforcemax=5
         
-        self.xforcemin=-10
-        self.xforcemax=10
-        self.yforcemin=-10
-        self.yforcemax=10
-        
-        self.zforcemin=-15
-        self.zforcemax=10
-        self.rolltorquemin=-2
-        self.rolltorquemax=2
-        self.pitchtorquemin=-2
-        self.pitchtorquemax=2
+        self.zforcemin=-25
+        self.zforcemax=0
+        self.rolltorquemin=-1
+        self.rolltorquemax=1
+        self.pitchtorquemin=-1
+        self.pitchtorquemax=1
         self.yawtorquemin=-.1
         self.yawtorquemax=.1
         
@@ -204,9 +203,8 @@ class UR5Env0(gym.Env):
                 inputstring='j'
                 #if self.totalstepstaken>=410:
                 #    print("action taken:", inputstring) 
-                
-            #if action==4:  
-            #    inputstring='l'  #moves straight down'    
+            if action==4:  
+                inputstring='l'  #moves straight down'    
 
             command_msg=inputstring.encode('ascii')    
             sock_DC.send(command_msg) 
@@ -239,7 +237,7 @@ class UR5Env0(gym.Env):
     
     def resetEnvironment(self):
          #inputstring=='home',inputstring=='end'
-        """
+        
         global initialrunflag
         if initialrunflag==1:  # for first episode of training/running policy
                     
@@ -252,12 +250,11 @@ class UR5Env0(gym.Env):
         else:
             #from pose near target, bring peg to above-target-pose, 
             #then to safepose, then to pose above holder, drop peg, regrab, bring to safepose then to target, 
-        """
-        inputstring='reset'
-        msg=inputstring.encode('ascii')    
-        sock_DC.send(msg) 
-        #sleep(5)#may need to increase!!! #0.020 ) 
-
+            inputstring='reset'
+            msg=inputstring.encode('ascii')    
+            sock_DC.send(msg) 
+            #sleep(5)#may need to increase!!! #0.020 ) 
+            
             
         data2 = sock_DC.recv(64) #receive the "done" command
         while data2== b'':
