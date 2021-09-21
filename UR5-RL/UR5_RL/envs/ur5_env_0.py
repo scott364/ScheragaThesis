@@ -99,7 +99,7 @@ class UR5Env0(gym.Env):
         self.continuousactionspace=continuousactionspace
         
         if self.continuousactionspace==False:
-            self.action_space = spaces.Discrete(4)#Generates number between 0 and 9
+            self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
         
         #9-8-2021:  Normalize the box- style action space!!  min = -1, max -1
         if self.continuousactionspace==True:
@@ -205,8 +205,8 @@ class UR5Env0(gym.Env):
                 #if self.totalstepstaken>=410:
                 #    print("action taken:", inputstring) 
                 
-            #if action==4:  
-            #    inputstring='l'  #moves straight down'    
+            if action==4:  
+                inputstring='l'  #moves straight down'    
 
             command_msg=inputstring.encode('ascii')    
             sock_DC.send(command_msg) 
@@ -486,7 +486,7 @@ class UR5Env0(gym.Env):
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-3,3))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-2.1,2.1))
 
                 display(self.fig)
                 
