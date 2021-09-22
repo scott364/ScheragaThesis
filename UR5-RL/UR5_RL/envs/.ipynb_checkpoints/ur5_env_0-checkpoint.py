@@ -47,7 +47,7 @@ print("port=",arduinoport)
 arduinoserial = serial.Serial(arduinoport,9600)
 
 
-bot='red'  #'blue'
+bot='blue'  #'red'
 print('the', bot, ' robot is being used. Please change the bot identity variable if this is incorrect')
 if bot=='red':
     from remote_FT_client import RemoteFTclient
@@ -56,8 +56,9 @@ if bot=='red':
     FTclient.bias_wrist_force() #Biasing wrist force
     
 
-HOST_DC = '192.168.0.103'
-PORT_DC= 65482
+#HOST_DC = '192.168.0.103'
+HOST_DC = '128.138.224.89' 
+PORT_DC= 65483
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -486,7 +487,7 @@ class UR5Env0(gym.Env):
                 self.ax1.cla() #clear axes 
                 self.ax1.plot(self.rewardlist)
 
-                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-3,3))
+                plt.setp(self.ax1, xlim=(0, self.TotalEpisodes), ylim=(-2.1,2.1))
 
                 display(self.fig)
                 
@@ -515,6 +516,6 @@ class UR5Env0(gym.Env):
         """    
         #if self._envStepCounter >= self.StepsPerEpisode:
         #    print ("Episode done at step", self._envStepCounter )
-        print("done status:",(self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1))
+        #print("done status:",(self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1))
         return  self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1#self.currentreward > -0.001 or
     
