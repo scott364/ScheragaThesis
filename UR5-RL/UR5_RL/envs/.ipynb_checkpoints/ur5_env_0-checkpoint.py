@@ -363,17 +363,17 @@ class UR5Env0(gym.Env):
         #print("Forces and Torques:", AVG_FT_list)
         
         """  NEED TO RE-SAMPLE THE VALUES AND FIND A WAY TO ZERO THE FORCES AND TORQUES!!
-        self.xforcemin=-5
-        self.xforcemax=5
-        self.yforcemin=-5
-        self.yforcemax=5
+       self.xforcemin=-10
+        self.xforcemax=10
+        self.yforcemin=-10
+        self.yforcemax=10
         
-        self.zforcemin=-25
-        self.zforcemax=0
-        self.rolltorquemin=-1
-        self.rolltorquemax=1
-        self.pitchtorquemin=-1
-        self.pitchtorquemax=1
+        self.zforcemin=-15
+        self.zforcemax=10
+        self.rolltorquemin=-2
+        self.rolltorquemax=2
+        self.pitchtorquemin=-2
+        self.pitchtorquemax=2
         self.yawtorquemin=-.1
         self.yawtorquemax=.1
         """ 
