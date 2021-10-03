@@ -7,7 +7,7 @@ To set up environment:
 conda create -n thesis -c conda-forge tensorflow-gpu=1.15
 
 
-conda install python=3.6.9
+#conda install python=3.6.9
 
 conda install jupyter
 
