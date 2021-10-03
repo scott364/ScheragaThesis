@@ -1,4 +1,4 @@
-Metadata-Version: 1.0
+Metadata-Version: 2.1
 Name: cairo-simulator
 Version: 0.1
 Summary: Package containing interfaces and algorithms for simulating robots and planning.
@@ -6,5 +6,8 @@ Home-page: https://github.com/cairo-robotics/cairo_simulator
 Author: Carl Mueller
 Author-email: carl.mueller@colorado.edu
 License: UNKNOWN
-Description: UNKNOWN
 Platform: UNKNOWN
+License-File: LICENSE
+
+UNKNOWN
+

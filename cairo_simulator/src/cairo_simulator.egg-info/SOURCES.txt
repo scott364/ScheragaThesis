@@ -1,3 +1,4 @@
+LICENSE
 MANIFEST.in
 README.md
 setup.py
@@ -88,6 +89,7 @@ assets/sawyer_description/urdf/sawyer_base.urdf.xacro
 assets/sawyer_description/urdf/sawyer_electric_gripper.urdf.xacro
 assets/sawyer_description/urdf/sawyer_static.urdf
 assets/sawyer_description/urdf/sawyer_static_blockcombine.urdf
+assets/sawyer_description/urdf/sawyer_static_blockcombine2.urdf
 assets/sawyer_description/urdf/sawyer_static_classic.urdf
 assets/sawyer_description/urdf/update_sawyer_model.sh
 assets/sawyer_description/urdf/.ipynb_checkpoints/sawyer_base.urdf-checkpoint.xacro
@@ -110,6 +112,9 @@ assets/sawyer_description/urdf/electric_gripper/fingers/standard_narrow.xacro
 assets/sawyer_description/urdf/electric_gripper/fingers/standard_wide.xacro
 assets/sawyer_description/urdf/null_gripper/example_end_effector.urdf.xacro
 assets/sawyer_description/urdf/null_gripper/null_gripper.xacro
+assets/sawyer_description/urdf/peg/manifest.xml
+assets/sawyer_description/urdf/peg/meshes/peg.STL
+assets/sawyer_description/urdf/peg/urdf/peg.urdf
 assets/sawyer_description/urdf/pneumatic_gripper/example_end_effector.urdf.xacro
 assets/sawyer_description/urdf/pneumatic_gripper/pneumatic_gripper_base.xacro
 assets/sawyer_description/urdf/pneumatic_gripper/rethink_pneumatic_gripper.xacro
