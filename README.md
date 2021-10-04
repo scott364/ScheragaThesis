@@ -14,6 +14,7 @@ conda install jupyter
 conda install jupyterlab
 
 conda install pandas
+conda install -c pytorch pytorch 
 
 pip install gym  pybullet
 
@@ -36,6 +37,7 @@ pip install -e ./
 cd MainEnv_RL
 
 pip install -e ./
+
 
 
 

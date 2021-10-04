@@ -1,4 +1,4 @@
-bot='red'  #'blue'
+bot='blue'  #'blue'
 print(bot, "robot is being used. Please change the bot variable if this is incorrect")
 import socket
 import numpy as np
@@ -12,8 +12,8 @@ from scipy.spatial.transform import Rotation as R
 from time import sleep
 import math
 
-HOST2 = '192.168.0.103' #'128.138.224.236'
-PORT2= 65480
+HOST2 = '128.138.224.89' #'192.168.0.103' #'128.138.224.236'
+PORT2= 65485
 
 if bot=='red':
     from remote_FT_client import RemoteFTclient

@@ -58,7 +58,7 @@ if bot=='red':
 
 #HOST_DC = '192.168.0.103'
 HOST_DC = '128.138.224.89' 
-PORT_DC= 65483
+PORT_DC= 65485
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -363,7 +363,7 @@ class UR5Env0(gym.Env):
         #print("Forces and Torques:", AVG_FT_list)
         
         """  NEED TO RE-SAMPLE THE VALUES AND FIND A WAY TO ZERO THE FORCES AND TORQUES!!
-       self.xforcemin=-10
+        self.xforcemin=-10
         self.xforcemax=10
         self.yforcemin=-10
         self.yforcemax=10
