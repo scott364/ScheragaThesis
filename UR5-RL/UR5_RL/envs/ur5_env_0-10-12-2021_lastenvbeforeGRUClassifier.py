@@ -90,28 +90,6 @@ def rpy2rot(rpy, degrees=False):
     return R.from_euler('xyz', rpy, degrees=degrees).as_matrix()
 
 
-
-#GRU MODEL-----------------------------------
-
-
-
-def evaluate_episode(model, data,  maxdifference=0.2, verbose=False):
-    model.eval()
-    inp = torch.from_numpy(np.array(data)) # should be 5x1
-    h = model.init_hidden(inp.shape[0])
-    #print("inp",inp)
-    #print("labs",labs)
-    #print("h",h)
-    out, h = model(inp.to(device).float(), h)
-    #print("model output",out)
-    return out
-
-gru_model=torch.load('currentmodel_10_11_2021.pt')
-gru_model.eval() #put into eval mode
-print("GRU model loaded")
-
-#GRU model above
-
 class UR5Env0(gym.Env):
 
 
