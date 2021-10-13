@@ -90,6 +90,29 @@ def rpy2rot(rpy, degrees=False):
     return R.from_euler('xyz', rpy, degrees=degrees).as_matrix()
 
 
+
+#GRU MODEL-----------------------------------
+
+
+
+def evaluate_episode(model, data,  maxdifference=0.2, verbose=False):
+    model.eval()
+    inp = torch.from_numpy(np.array(data)) # should be 5x1
+    h = model.init_hidden(inp.shape[0])
+    #print("inp",inp)
+    #print("labs",labs)
+    #print("h",h)
+    out, h = model(inp.to(device).float(), h)
+    #print("model output",out)
+    return out
+
+device = torch.device("cpu")
+gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )
+gru_model.eval() #put into eval mode
+print("GRU model loaded")
+
+#GRU model above
+
 class UR5Env0(gym.Env):
 
 
@@ -123,7 +146,6 @@ class UR5Env0(gym.Env):
         self.xforcemax=10
         self.yforcemin=-10
         self.yforcemax=10
-        
         self.zforcemin=-15
         self.zforcemax=10
         self.rolltorquemin=-2
@@ -132,6 +154,23 @@ class UR5Env0(gym.Env):
         self.pitchtorquemax=2
         self.yawtorquemin=-.1
         self.yawtorquemax=.1
+        
+        self.normalized5channel= np.array([[],[],[],[],[]])
+
+        #largest and smallest forcetorque values from both the 10-4 and 10-6 datasets. Used for GRU data normalization 
+        #I want to also update the other force mins and maxes, 
+        #but I don't want to change something that works..at least just yet. 
+        self.xforceminGRU= -23.11346244812012 
+        self.xforcemaxGRU= 20.62649154663086
+        self.yforceminGRU= -36.84435272216797 
+        self.yforcemaxGRU= 48.10685729980469
+        self.zforceminGRU= -136.04910278320312 
+        self.zforcemaxGRU= 10.252020835876465
+        self.rolltorqueminGRU= -8.972264289855957 
+        self.rolltorquemaxGRU= 6.203413009643555
+        self.pitchtorqueminGRU= -6.052636623382568 
+        self.pitchtorquemaxGRU= 5.1588873863220215
+
         
         self.fig, (self.ax1) = plt.subplots(1,figsize=(7,7)) # was 8,8
 
@@ -236,6 +275,7 @@ class UR5Env0(gym.Env):
         self.resetEnvironment()
         self._observation = self._compute_observation() #you *have* to compute and return the observation from reset()
         self.episodeinitialpose=self.currentpose #contains just initial xyz poses IN INCHES
+        self.normalized5channel= np.array([[],[],[],[],[]])
         return np.array(self._observation)
     
     def resetEnvironment(self):
@@ -353,9 +393,9 @@ class UR5Env0(gym.Env):
             self.currentpose=[x_pose,y_pose,z_pose]#In inches
             
             #For the blue robot, observation messages contain force torque data. 
-            AVG_FT_list=[]
+            self.AVG_FT_list=[]
             for j in range(6):
-                    AVG_FT_list.append(unpacked[16+j])
+                    self.AVG_FT_list.append(unpacked[16+j])
                 #print("forcetorque:",forcetorque)
 
         #print("x",x_pose,"y",y_pose,"z",z_pose)
@@ -377,12 +417,22 @@ class UR5Env0(gym.Env):
         self.yawtorquemin=-.1
         self.yawtorquemax=.1
         """ 
+        #normalized forces and torques for DQN. Normalized range is between -1 and 1. I should probably change this to be the actual min and maxes I found
+        #from the 10-4 and 10-6 datasets.
+        xforce_normalized=((self.AVG_FT_list[0]-self.xforcemin)/(self.xforcemax-self.xforcemin)*2)-1
+        yforce_normalized=((self.AVG_FT_list[1]-self.yforcemin)/(self.yforcemax-self.yforcemin)*2)-1
+        zforce_normalized=((self.AVG_FT_list[2]-self.zforcemin)/(self.zforcemax-self.zforcemin)*2)-1
+        rolltorque_normalized=((self.AVG_FT_list[3]-self.rolltorquemin)/(self.rolltorquemax-self.rolltorquemin)*2)-1
+        pitchtorque_normalized=((self.AVG_FT_list[4]-self.pitchtorquemin)/(self.pitchtorquemax-self.pitchtorquemin)*2)-1
         
-        xforce_normalized=((AVG_FT_list[0]-self.xforcemin)/(self.xforcemax-self.xforcemin)*2)-1
-        yforce_normalized=((AVG_FT_list[1]-self.yforcemin)/(self.yforcemax-self.yforcemin)*2)-1
-        zforce_normalized=((AVG_FT_list[2]-self.zforcemin)/(self.zforcemax-self.zforcemin)*2)-1
-        rolltorque_normalized=((AVG_FT_list[3]-self.rolltorquemin)/(self.rolltorquemax-self.rolltorquemin)*2)-1
-        pitchtorque_normalized=((AVG_FT_list[4]-self.pitchtorquemin)/(self.pitchtorquemax-self.pitchtorquemin)*2)-1
+      
+        
+            
+            
+            
+            
+            
+            
         #yawtorque_normalized=((AVG_FT_list[0]-self.xforcemin)/(self.xforcemax-self.xforcemin)*2)-1
         
         #return[AVG_FT_list[0],AVG_FT_list[1],AVG_FT_list[2],
@@ -405,7 +455,7 @@ class UR5Env0(gym.Env):
         #        print("compute reward called, about to call 'obs'")
         rewardobs=self._compute_observation()
         
-        
+        #Accumulate forces and torques to output to csv file at the end of episode
         self.xforcelist.append(rewardobs[0])
         self.yforcelist.append(rewardobs[1])
         self.zforcelist.append(rewardobs[2])
@@ -436,10 +486,11 @@ class UR5Env0(gym.Env):
         #request a 0 or 1 from the arduino button   
         arduinoserial.write(b'q\n')  
         arduinobuttonstatus = arduinoserial.readline()
-
+        buttonvalue=0
         if arduinobuttonstatus== b'1\r\n':
             print("BUTTON PRESSED! Episode over!")
-            self.buttonoutputlist.append(1)
+            buttonvalue=1
+            self.buttonoutputlist.append(buttonvalue)
             
             self.currentreward=2
             #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
@@ -448,8 +499,39 @@ class UR5Env0(gym.Env):
             print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
             
         elif arduinobuttonstatus== b'0\r\n':  #If not
-                self.buttonoutputlist.append(0) 
-                
+            buttonvalue=0
+            self.buttonoutputlist.append(buttonvalue) 
+        
+        #Scaling for GRU. Output of normalized range is between 0 and 1. 
+        scaledmax=1
+        scaledmin=0
+        xforce_normalizedGRU=(((self.AVG_FT_list[0]-self.xforceminGRU)/(self.xforcemaxGRU-self.xforceminGRU))*(scaledmax-scaledmin))+scaledmin
+        yforce_normalizedGRU=(((self.AVG_FT_list[1]-self.yforceminGRU)/(self.yforcemaxGRU-self.yforceminGRU))*(scaledmax-scaledmin))+scaledmin
+        zforce_normalizedGRU=(((self.AVG_FT_list[2]-self.zforceminGRU)/(self.zforcemaxGRU-self.zforceminGRU))*(scaledmax-scaledmin))+scaledmin
+        rolltorque_normalizedGRU=(((self.AVG_FT_list[3]-self.rolltorqueminGRU)/(self.rolltorquemaxGRU-self.rolltorqueminGRU))*(scaledmax-scaledmin))+scaledmin
+        pitchtorque_normalizedGRU=(((self.AVG_FT_list[4]-self.pitchtorqueminGRU)/(self.pitchtorquemaxGRU-self.pitchtorqueminGRU))*(scaledmax-scaledmin))+scaledmin
+        
+        newcol=np.array([[xforce_normalizedGRU],[yforce_normalizedGRU],[zforce_normalizedGRU],[rolltorque_normalizedGRU],[pitchtorque_normalizedGRU]])
+        self.normalized5channel=np.concatenate((self.normalized5channel, newcol), 1)
+
+        if self.normalized5channel.shape[1]>10:
+            self.normalized5channel= np.delete(self.normalized5channel=, 0, 1) #pop earliest collumn of data
+
+        print("normalized5channel:")
+        print(self.normalized5channel)
+        print("normalized5channel.shape: ",self.normalized5channel.shape)
+
+        if self.normalized5channel.shape[1]==10:
+            self.normalized5channel_expandeddims=np.expand_dims(self.normalized5channel, axis=0)
+            outputfull=float(evaluate_episode(gru_model, self.normalized5channel_expandeddims))
+            print("GRU Output",outputfull)
+            if abs(outputfull-buttonvalue)<0.5:
+                print("00000 GRU Output Correct! 00000")
+            else:
+                print("XXXXX GRU Output NOT Correct! XXXXX")
+        else: 
+            print("data array for GRU not filled. Currently at size of ", normalized5channel.shape[1])
+            
         print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
         
 
