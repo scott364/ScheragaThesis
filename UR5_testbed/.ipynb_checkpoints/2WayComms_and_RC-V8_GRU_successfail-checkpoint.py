@@ -20,7 +20,7 @@ import torch.optim as optim
 import math
 
 HOST2 = '128.138.224.89' #'192.168.0.103' #'128.138.224.236'
-PORT2= 65485
+PORT2= 65487
 
 if bot=='red':
     from remote_FT_client import RemoteFTclient
@@ -76,9 +76,24 @@ FT_list_z=[]
 FT_list_roll=[]
 FT_list_pitch=[]
 FT_list_yaw=[]
+
+normalized5channel= np.array([[],[],[],[],[]])
+
 buttonoutputlist=[]
 endflag=False
 
+
+#largest and smallest forcetorque values from both the 10-4 and 10-6 datasets
+xforcemin= -23.11346244812012 
+xforcemax= 20.62649154663086
+yforcemin= -36.84435272216797 
+yforcemax= 48.10685729980469
+zforcemin= -136.04910278320312 
+zforcemax= 10.252020835876465
+rolltorquemin= -8.972264289855957 
+rolltorquemax= 6.203413009643555
+pitchtorquemin= -6.052636623382568 
+pitchtorquemax= 5.1588873863220215
 
 #GRU MODEL-----------------------------------
 
@@ -117,14 +132,16 @@ def evaluate_episode(model, data,  maxdifference=0.2, verbose=False):
 is_cuda = torch.cuda.is_available()
 
 # If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
+"""
 if is_cuda:
     device = torch.device("cuda")
 else:
     device = torch.device("cpu")
     
 print(device)
-
-gru_model=torch.load('currentmodel_10_11_2021.pt')
+"""
+device = torch.device("cpu")
+gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )
 gru_model.eval() #put into eval mode
 print("GRU model loaded")
 
@@ -148,6 +165,8 @@ try:
                 FT_list_pitch=[]
                 FT_list_yaw=[]
                 buttonoutputlist=[]
+                
+                normalized5channel= np.array([[],[],[],[],[]])
             if "action" in inputstring:
                 #actionbyte=struct.pack('ff',0.9887,-.5789) # action[0],action[1])
                 actionbyte=struct.pack('dd',0.9887,-.57889) # action[0],action[1])
@@ -186,7 +205,7 @@ try:
             print('received {!r}'.format(data))
             """
             if (inputstring=='plot'):
-                print("No message sent to smarthand. Plotting Data.")
+                    print("No message sent to smarthand. Plotting Data.")
                     fig = plt.figure()
                     ax = fig.add_subplot(1, 1, 1)
                     ax.plot(range(len(FT_list_x)),FT_list_x, label="force:x")
@@ -201,15 +220,7 @@ try:
                     
             if (inputstring=='obs'):
                  #request a 0 or 1 from the arduino button   
-                arduinoserial.write(b'q\n')  
-                arduinobuttonstatus = arduinoserial.readline()
-
-                if arduinobuttonstatus== b'1\r\n':
-                    print("BUTTON PRESSED! Episode over!")
-                    buttonoutputlist.append(1)
-                elif arduinobuttonstatus== b'0\r\n':  #If not
-                    print("BUTTON NOT PRESSED")
-                    buttonoutputlist.append(0) 
+               
 
                 if bot=='blue':
                     data2 = sock.recv(88)#(64) 
@@ -248,8 +259,41 @@ try:
                     FT_list_pitch.append(forcetorque[4])
                     FT_list_yaw.append(forcetorque[5])
                     
-                    outputfull=evaluate_episode(gru_model3, exampledata)
-                    print("GRU Output",outputfull)
+                    
+                    scaledmax=1
+                    scaledmin=0
+                    xforce_normalized=(((forcetorque[0]-xforcemin)/(xforcemax-xforcemin))*(scaledmax-scaledmin))+scaledmin
+                    yforce_normalized=(((forcetorque[1]-yforcemin)/(yforcemax-yforcemin))*(scaledmax-scaledmin))+scaledmin
+                    zforce_normalized=(((forcetorque[2]-zforcemin)/(zforcemax-zforcemin))*(scaledmax-scaledmin))+scaledmin
+                    rolltorque_normalized=(((forcetorque[3]-rolltorquemin)/(rolltorquemax-rolltorquemin))*(scaledmax-scaledmin))+scaledmin
+                    pitchtorque_normalized=(((forcetorque[4]-pitchtorquemin)/(pitchtorquemax-pitchtorquemin))*(scaledmax-scaledmin))+scaledmin
+                    
+                    newcol=np.array([[xforce_normalized],[yforce_normalized],[zforce_normalized],[rolltorque_normalized],[pitchtorque_normalized]])
+                    normalized5channel=np.concatenate((normalized5channel, newcol), 1)
+                    
+                    if normalized5channel.shape[1]>10:
+                        normalized5channel = np.delete(normalized5channel, 0, 1) #pop earliest collumn of data
+                    
+                    print("normalized5channel:")
+                    print(normalized5channel)
+                    print("normalized5channel.shape: ",normalized5channel.shape)
+      
+                    if normalized5channel.shape[1]==10:
+                        normalized5channel_expandeddims=np.expand_dims(normalized5channel, axis=0)
+                        outputfull=float(evaluate_episode(gru_model, normalized5channel_expandeddims))
+                        print("GRU Output",outputfull)
+                    else: 
+                        print("data array for GRU not filled. Currently at size of ", normalized5channel.shape[1])
+                    
+                    arduinoserial.write(b'q\n')  
+                    arduinobuttonstatus = arduinoserial.readline()
+
+                    if arduinobuttonstatus== b'1\r\n':
+                        print("BUTTON PRESSED! Episode over!")
+                        buttonoutputlist.append(1)
+                    elif arduinobuttonstatus== b'0\r\n':  #If not
+                        print("BUTTON NOT PRESSED")
+                        buttonoutputlist.append(0) 
                     
                     
 
