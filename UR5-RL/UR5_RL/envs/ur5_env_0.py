@@ -63,7 +63,7 @@ if bot=='red':
 
 #HOST_DC = '192.168.0.103'
 HOST_DC = '128.138.224.89' 
-PORT_DC= 65482
+PORT_DC= 65483
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -203,16 +203,20 @@ class UR5Env0(gym.Env):
         today = date.today()    
         todaydate = today.strftime("%m_%d_%Y")
         self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_"+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults_"+todaydate+'.csv'   
         self.rewardlistfilename="rewardlist_"+todaydate+'.csv'  
         
         with open(self.forcetorquebuttonresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 writer.writerow(self.headers)
                 
+        with open(self.GRUresultsfilename, mode='w') as outputfile:
+                writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow(["ButtonData","GRUOutput","AttemptNum","Episode","Timestep"])
+                
         with open(self.rewardlistfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 writer.writerow(["Rewardlist"])
-        
         
         self.resetEnvironment()
         time.sleep(0.1) 
@@ -448,27 +452,27 @@ class UR5Env0(gym.Env):
         
         if xforce_normalized>1:
             xforce_normalized=1
-        elif xforce_normalized<1:
+        elif xforce_normalized<-1:
             xforce_normalized=-1  
             
         if yforce_normalized>1:
             yforce_normalized=1
-        elif yforce_normalized<1:
+        elif yforce_normalized<-1:
             yforce_normalized=-1  
             
         if zforce_normalized>1:
             zforce_normalized=1
-        elif zforce_normalized<1:
+        elif zforce_normalized<-1:
             zforce_normalized=-1   
             
         if rolltorque_normalized>1:
             rolltorque_normalized=1
-        elif rolltorque_normalized<1:
+        elif rolltorque_normalized<-1:
             rolltorque_normalized=-1  
             
         if pitchtorque_normalized>1:
             pitchtorque_normalized=1
-        elif pitchtorque_normalized<1:
+        elif pitchtorque_normalized<-1:
             pitchtorque_normalized=-1    
             
             
@@ -566,19 +570,25 @@ class UR5Env0(gym.Env):
             self.normalized5channel_expandeddims=np.expand_dims(self.normalized5channel, axis=0)
             outputfull=float(evaluate_episode(self.gru_model, self.normalized5channel_expandeddims))
             #print("GRU Output",outputfull)
-            if abs(outputfull-buttonvalue)<0.5:
+            if abs(outputfull-buttonvalue)<0.3:
                 resultstring="00000 GRU Output Correct! 00000"
                 self.GRUsuccesscounter+=1
             else:
                 resultstring="XXXXX GRU Output NOT Correct! XXXXX"
                 self.GRUfailcounter+=1
+                
+                #output incorrect GRU results to file, along with episode and timestep info
+                with open(self.GRUresultsfilename, mode='a') as outputfile:
+                    writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                    writer.writerow([buttonvalue,round(outputfull, 2),(self.GRUsuccesscounter+self.GRUfailcounter),self.episodecounter,self._envStepCounter])
         else: 
             resultstring=("unfilled GRU buffer at size ")
             resultstring=resultstring+str(self.normalized5channel.shape[1])
             outputfull=0
             #print(str(resultstring))
             
-                                          
+        
+                                 
         #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
         print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, " Reward:",round(self.currentreward, 2)," Button Pressed?",buttonvalue,
               " GRU output:",  round(outputfull, 2),resultstring  , "GRU Correct qty", self.GRUsuccesscounter, "GRU Incorrect qty", self.GRUfailcounter,"GRU Total Attempts",self.GRUsuccesscounter+self.GRUfailcounter ) 
