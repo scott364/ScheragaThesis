@@ -26,6 +26,11 @@ import csv
 import time
 from datetime import date
 
+import torch
+import torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader
+import torch.nn.functional as F
+import torch.optim as optim
 
 #Arduino Button
 import serial
@@ -58,7 +63,7 @@ if bot=='red':
 
 #HOST_DC = '192.168.0.103'
 HOST_DC = '128.138.224.89' 
-PORT_DC= 65485
+PORT_DC= 65482
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -96,6 +101,7 @@ def rpy2rot(rpy, degrees=False):
 
 
 def evaluate_episode(model, data,  maxdifference=0.2, verbose=False):
+    device = torch.device("cpu")
     model.eval()
     inp = torch.from_numpy(np.array(data)) # should be 5x1
     h = model.init_hidden(inp.shape[0])
@@ -106,10 +112,7 @@ def evaluate_episode(model, data,  maxdifference=0.2, verbose=False):
     #print("model output",out)
     return out
 
-device = torch.device("cpu")
-gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )
-gru_model.eval() #put into eval mode
-print("GRU model loaded")
+
 
 #GRU model above
 
@@ -117,6 +120,12 @@ class UR5Env0(gym.Env):
 
 
     def __init__(self,TotalEpisodes=100,StepsPerEpisode=10,continuousactionspace=False):
+        
+        device = torch.device("cpu")
+        self.gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )  #Getting error here : python AttributeError: Can't get attribute 'GRUNet' on <module '__main__'>
+        self.gru_model.eval() #put into eval mode
+        print("GRU model loaded")
+
         print("TotalEpisodes:",TotalEpisodes, "   StepsPerEpisode:",StepsPerEpisode)
         self._observation = []
         
@@ -139,6 +148,8 @@ class UR5Env0(gym.Env):
                                             np.array([5,  5,  0, 1, 1,-6.5,-18.5])) # 5 forcetorque, xyz pose
         
         
+        
+
         self.TotalEpisodes=TotalEpisodes
         self.StepsPerEpisode=StepsPerEpisode
         
@@ -182,6 +193,9 @@ class UR5Env0(gym.Env):
         self.totalstepstaken=0
         self.totalsuccesscounter=0
         
+        self.GRUsuccesscounter=0
+        self.GRUfailcounter=0
+        
         self.headers=[]
         for i in range(self.StepsPerEpisode):
             label=str(i)
@@ -209,7 +223,7 @@ class UR5Env0(gym.Env):
     
     
     def step(self, action):
-
+        #print("step")
         # we can still check if we violate a torque limit etc and if that happens, we can collect an observation, reward and make sure done is now true so we move onto a new action or terminate the current policy rollout.
         self.motionselector(action)
         self._observation = self._compute_observation()  
@@ -226,6 +240,7 @@ class UR5Env0(gym.Env):
     
     
     def motionselector(self,action):
+        #print("motionselector")
         if self.continuousactionspace==False:
             #print("action",action)
             if action==0:  
@@ -267,6 +282,7 @@ class UR5Env0(gym.Env):
 
     
     def reset(self):    
+        #print("reset")
         self._envStepCounter=1
         self.initialaction=1
         self.doneflag=0
@@ -279,6 +295,7 @@ class UR5Env0(gym.Env):
         return np.array(self._observation)
     
     def resetEnvironment(self):
+        #print("resetenv")
          #inputstring=='home',inputstring=='end'
         """
         global initialrunflag
@@ -325,7 +342,7 @@ class UR5Env0(gym.Env):
 
     def _compute_observation(self):
         
-        
+        #print("compute obs")
         #if self.totalstepstaken>=410:
         #    print("obs")
         inputstring='obs'
@@ -419,17 +436,40 @@ class UR5Env0(gym.Env):
         """ 
         #normalized forces and torques for DQN. Normalized range is between -1 and 1. I should probably change this to be the actual min and maxes I found
         #from the 10-4 and 10-6 datasets.
-        xforce_normalized=((self.AVG_FT_list[0]-self.xforcemin)/(self.xforcemax-self.xforcemin)*2)-1
-        yforce_normalized=((self.AVG_FT_list[1]-self.yforcemin)/(self.yforcemax-self.yforcemin)*2)-1
-        zforce_normalized=((self.AVG_FT_list[2]-self.zforcemin)/(self.zforcemax-self.zforcemin)*2)-1
-        rolltorque_normalized=((self.AVG_FT_list[3]-self.rolltorquemin)/(self.rolltorquemax-self.rolltorquemin)*2)-1
-        pitchtorque_normalized=((self.AVG_FT_list[4]-self.pitchtorquemin)/(self.pitchtorquemax-self.pitchtorquemin)*2)-1
-        
+
+        scaledmax=1
+        scaledmin=-1
       
+        xforce_normalized=(((self.AVG_FT_list[0]-self.xforceminGRU)/(self.xforcemaxGRU-self.xforceminGRU))*(scaledmax-scaledmin))+scaledmin
+        yforce_normalized=(((self.AVG_FT_list[1]-self.yforceminGRU)/(self.yforcemaxGRU-self.yforceminGRU))*(scaledmax-scaledmin))+scaledmin
+        zforce_normalized=(((self.AVG_FT_list[2]-self.zforceminGRU)/(self.zforcemaxGRU-self.zforceminGRU))*(scaledmax-scaledmin))+scaledmin
+        rolltorque_normalized=(((self.AVG_FT_list[3]-self.rolltorqueminGRU)/(self.rolltorquemaxGRU-self.rolltorqueminGRU))*(scaledmax-scaledmin))+scaledmin
+        pitchtorque_normalized=(((self.AVG_FT_list[4]-self.pitchtorqueminGRU)/(self.pitchtorquemaxGRU-self.pitchtorqueminGRU))*(scaledmax-scaledmin))+scaledmin
         
+        if xforce_normalized>1:
+            xforce_normalized=1
+        elif xforce_normalized<1:
+            xforce_normalized=-1  
             
+        if yforce_normalized>1:
+            yforce_normalized=1
+        elif yforce_normalized<1:
+            yforce_normalized=-1  
             
+        if zforce_normalized>1:
+            zforce_normalized=1
+        elif zforce_normalized<1:
+            zforce_normalized=-1   
             
+        if rolltorque_normalized>1:
+            rolltorque_normalized=1
+        elif rolltorque_normalized<1:
+            rolltorque_normalized=-1  
+            
+        if pitchtorque_normalized>1:
+            pitchtorque_normalized=1
+        elif pitchtorque_normalized<1:
+            pitchtorque_normalized=-1    
             
             
             
@@ -451,6 +491,7 @@ class UR5Env0(gym.Env):
                        rolltorque_normalized,pitchtorque_normalized,x_pose-initialX,y_pose-initialY]
     
     def _compute_reward(self):
+        #print("Compute reward")
         #if self.totalstepstaken>=410:
         #        print("compute reward called, about to call 'obs'")
         rewardobs=self._compute_observation()
@@ -488,7 +529,7 @@ class UR5Env0(gym.Env):
         arduinobuttonstatus = arduinoserial.readline()
         buttonvalue=0
         if arduinobuttonstatus== b'1\r\n':
-            print("BUTTON PRESSED! Episode over!")
+            #print("BUTTON PRESSED! Episode over!")
             buttonvalue=1
             self.buttonoutputlist.append(buttonvalue)
             
@@ -496,7 +537,7 @@ class UR5Env0(gym.Env):
             #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
             self.doneflag=1
             self.totalsuccesscounter+=1
-            print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
+            #print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
             
         elif arduinobuttonstatus== b'0\r\n':  #If not
             buttonvalue=0
@@ -515,30 +556,39 @@ class UR5Env0(gym.Env):
         self.normalized5channel=np.concatenate((self.normalized5channel, newcol), 1)
 
         if self.normalized5channel.shape[1]>10:
-            self.normalized5channel= np.delete(self.normalized5channel=, 0, 1) #pop earliest collumn of data
+            self.normalized5channel= np.delete(self.normalized5channel, 0, 1) #pop earliest collumn of data
 
-        print("normalized5channel:")
-        print(self.normalized5channel)
-        print("normalized5channel.shape: ",self.normalized5channel.shape)
+        #print("normalized5channel:")
+        #print(self.normalized5channel)
+        #print("normalized5channel.shape: ",self.normalized5channel.shape)
 
         if self.normalized5channel.shape[1]==10:
             self.normalized5channel_expandeddims=np.expand_dims(self.normalized5channel, axis=0)
-            outputfull=float(evaluate_episode(gru_model, self.normalized5channel_expandeddims))
-            print("GRU Output",outputfull)
+            outputfull=float(evaluate_episode(self.gru_model, self.normalized5channel_expandeddims))
+            #print("GRU Output",outputfull)
             if abs(outputfull-buttonvalue)<0.5:
-                print("00000 GRU Output Correct! 00000")
+                resultstring="00000 GRU Output Correct! 00000"
+                self.GRUsuccesscounter+=1
             else:
-                print("XXXXX GRU Output NOT Correct! XXXXX")
+                resultstring="XXXXX GRU Output NOT Correct! XXXXX"
+                self.GRUfailcounter+=1
         else: 
-            print("data array for GRU not filled. Currently at size of ", normalized5channel.shape[1])
+            resultstring=("unfilled GRU buffer at size ")
+            resultstring=resultstring+str(self.normalized5channel.shape[1])
+            outputfull=0
+            #print(str(resultstring))
             
-        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
+                                          
+        #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
+        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, " Reward:",round(self.currentreward, 2)," Button Pressed?",buttonvalue,
+              " GRU output:",  round(outputfull, 2),resultstring  , "GRU Correct qty", self.GRUsuccesscounter, "GRU Incorrect qty", self.GRUfailcounter,"GRU Total Attempts",self.GRUsuccesscounter+self.GRUfailcounter ) 
         
 
         return self.currentreward 
     
 
     def _compute_done(self):
+        #print("Compute done")
         # - done, a boolean, value that is TRUE if the environment reached an endpoint, and should be reset, or FALSE otherwise;
         
         if self._envStepCounter >= self.StepsPerEpisode+1 or self.doneflag==1:    
