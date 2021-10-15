@@ -63,7 +63,7 @@ if bot=='red':
 
 #HOST_DC = '192.168.0.103'
 HOST_DC = '128.138.224.89' 
-PORT_DC= 65483
+PORT_DC= 65486
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -524,7 +524,7 @@ class UR5Env0(gym.Env):
         else: 
             self.currentreward = -2
             self.currentreward+=  (initialZ-currentZ)
-
+        """
         #request a 0 or 1 from the arduino button   
         arduinoserial.write(b'q\n')  
         arduinobuttonstatus = arduinoserial.readline()
@@ -543,7 +543,30 @@ class UR5Env0(gym.Env):
         elif arduinobuttonstatus== b'0\r\n':  #If not
             buttonvalue=0
             self.buttonoutputlist.append(buttonvalue) 
-        
+            
+        """   
+        buttonvalue=0
+        Zpositionthreshhold=0.281
+        if self.AVG_FT_list[2]<-6 and (currentZ/39.3701)<Zpositionthreshhold:
+            print("CONTACT!","Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2])
+            buttonvalue=1
+            self.buttonoutputlist.append(buttonvalue)
+            self.currentreward=2
+            self.doneflag=1
+            self.totalsuccesscounter+=1
+        elif (currentZ/39.3701)<Zpositionthreshhold:
+            print("NO CONTACT! Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2] ," Z force above threshold of -6")    
+            buttonvalue=0
+            self.buttonoutputlist.append(buttonvalue) 
+        elif self.AVG_FT_list[2]<-6:
+            print("NO CONTACT! Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2] ,"Z position above threshold of 0.281 meters")
+            buttonvalue=0
+            self.buttonoutputlist.append(buttonvalue) 
+        else:
+            print(" NO CONTACT! Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2] ,"Z position above threshold of 0.281 meters and Z force above threshold of -6")      
+            buttonvalue=0
+            self.buttonoutputlist.append(buttonvalue) 
+            
         #Scaling for GRU. Output of normalized range is between 0 and 1. 
         scaledmax=1
         scaledmin=0

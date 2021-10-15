@@ -20,7 +20,7 @@ import torch.optim as optim
 import math
 
 HOST2 = '128.138.224.89' #'192.168.0.103' #'128.138.224.236'
-PORT2= 65486
+PORT2= 65487
 
 if bot=='red':
     from remote_FT_client import RemoteFTclient
