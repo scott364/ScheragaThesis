@@ -168,9 +168,7 @@ class UR5Env0(gym.Env):
         
         self.normalized5channel= np.array([[],[],[],[],[]])
 
-        #largest and smallest forcetorque values from both the 10-4 and 10-6 datasets. Used for GRU data normalization 
-        #I want to also update the other force mins and maxes, 
-        #but I don't want to change something that works..at least just yet. 
+        #largest and smallest forcetorque values from both the 10-4 and 10-6 datasets. 
         self.xforceminGRU= -23.11346244812012 
         self.xforcemaxGRU= 20.62649154663086
         self.yforceminGRU= -36.84435272216797 
@@ -438,8 +436,7 @@ class UR5Env0(gym.Env):
         self.yawtorquemin=-.1
         self.yawtorquemax=.1
         """ 
-        #normalized forces and torques for DQN. Normalized range is between -1 and 1. I should probably change this to be the actual min and maxes I found
-        #from the 10-4 and 10-6 datasets.
+        #normalized forces and torques for DQN. Normalized range is between -1 and 1.
 
         scaledmax=1
         scaledmin=-1
