@@ -20,7 +20,7 @@ import torch.optim as optim
 import math
 
 HOST2 = '128.138.224.89' #'192.168.0.103' #'128.138.224.236'
-PORT2= 65482
+PORT2= 65486
 
 if bot=='red':
     from remote_FT_client import RemoteFTclient
@@ -257,7 +257,8 @@ def execute_rl():
                         roll=rpy[0]  #In degrees!
                         pitch=rpy[1]
                         yaw=rpy[2]
-                        print("currentpose: x",currentX,"y",currentY,"z",currentZ)
+                        #print("currentpose (inches): x:",currentX,"y:",currentY,"z:",currentZ)
+                        print("currentpose (meters): x:",TransRotatmatrix[0][3],"y:",TransRotatmatrix[1][3],"z:",TransRotatmatrix[2][3])
                         print("roll",roll,"pitch",pitch,"yaw",yaw)
 
                         forcetorque=[]
@@ -271,8 +272,22 @@ def execute_rl():
                         FT_list_roll.append(forcetorque[3])
                         FT_list_pitch.append(forcetorque[4])
                         FT_list_yaw.append(forcetorque[5])
-
-
+                        
+                        # The Force and position conditions didnt work, as I noticed a -1.83 force once whe nthe button was contacted. Not sure yet if I should Switch to position-only.
+                        print("")
+                        print("Z Torque:",forcetorque[2], "Z position:",TransRotatmatrix[2][3])
+                        if forcetorque[2]<-6 and TransRotatmatrix[2][3]<0.281:
+                            print("Fake button contact conditions: CONTACT!")
+                        elif TransRotatmatrix[2][3]<0.281:
+                            print("Fake button contact conditions: NO CONTACT! Z force above threshold of -6")    
+                        elif forcetorque[2]>-6:
+                            print("Fake button contact conditions: NO CONTACT! Z position above threshold of 0.281 meters")  
+                        else:
+                            print("Fake button contact conditions: NO CONTACT! Z position above threshold of 0.281 meters and Z force above threshold of -6")  
+                        """"""
+                            
+                            
+                            
                         scaledmax=1
                         scaledmin=0
                         xforce_normalized=(((forcetorque[0]-xforcemin)/(xforcemax-xforcemin))*(scaledmax-scaledmin))+scaledmin
@@ -287,9 +302,10 @@ def execute_rl():
                         if normalized5channel.shape[1]>10:
                             normalized5channel = np.delete(normalized5channel, 0, 1) #pop earliest collumn of data
 
-                        print("normalized5channel:")
-                        print(normalized5channel)
-                        print("normalized5channel.shape: ",normalized5channel.shape)
+                        #Uncomment below to display 5x 10 array of data.     
+                        #print("normalized5channel:")
+                        #print(normalized5channel)
+                        #print("normalized5channel.shape: ",normalized5channel.shape)
 
                         if normalized5channel.shape[1]==10:
                             device = torch.device("cpu")
