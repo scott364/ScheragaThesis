@@ -63,7 +63,7 @@ if bot=='red':
 
 #HOST_DC = '192.168.0.103'
 HOST_DC = '128.138.224.89' 
-PORT_DC= 65486
+PORT_DC= 65488
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -122,7 +122,8 @@ class UR5Env0(gym.Env):
     def __init__(self,TotalEpisodes=100,StepsPerEpisode=10,continuousactionspace=False):
         
         device = torch.device("cpu")
-        self.gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )  #Getting error here : python AttributeError: Can't get attribute 'GRUNet' on <module '__main__'>
+        #self.gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )  #Getting error here : python AttributeError: Can't get attribute 'GRUNet' on <module '__main__'>
+        self.gru_model=torch.load('currentmodel_3Xcopiedsuccess10_19_2021.pt', map_location=torch.device('cpu') ) 
         self.gru_model.eval() #put into eval mode
         print("GRU model loaded")
 
@@ -194,15 +195,20 @@ class UR5Env0(gym.Env):
         self.GRUsuccesscounter=0
         self.GRUfailcounter=0
         
+        self.counter_truepositive=0
+        self.counter_falsenegative=0    
+        self.counter_truenegative=0    
+        self.counter_falsepositive=0
+                
         self.headers=[]
         for i in range(self.StepsPerEpisode):
             label=str(i)
             self.headers.append("header"+label)
         today = date.today()    
         todaydate = today.strftime("%m_%d_%Y")
-        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_"+todaydate+'.csv'    
-        self.GRUresultsfilename="GRUresults_"+todaydate+'.csv'   
-        self.rewardlistfilename="rewardlist_"+todaydate+'.csv'  
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylindernobutton_"+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults_cylindernobutton__"+todaydate+'.csv'   
+        self.rewardlistfilename="rewardlist_cylindernobutton__"+todaydate+'.csv'  
         
         with open(self.forcetorquebuttonresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -210,7 +216,7 @@ class UR5Env0(gym.Env):
                 
         with open(self.GRUresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                writer.writerow(["ButtonData","GRUOutput","AttemptNum","Episode","Timestep"])
+                writer.writerow(["Episode","Timestep","AttemptNum","ButtonData","GRUOutput","TruePositiveCount","TrueNegativeCount","FalsePositiveCount","FalseNegativeCount"])
                 
         with open(self.rewardlistfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -590,17 +596,29 @@ class UR5Env0(gym.Env):
             self.normalized5channel_expandeddims=np.expand_dims(self.normalized5channel, axis=0)
             outputfull=float(evaluate_episode(self.gru_model, self.normalized5channel_expandeddims))
             #print("GRU Output",outputfull)
-            if abs(outputfull-buttonvalue)<0.3:
+       
+            cutoff=0.5
+            if buttonvalue==1  and outputfull>= cutoff:
+                self.counter_truepositive+=1
                 resultstring="00000 GRU Output Correct! 00000"
-                self.GRUsuccesscounter+=1
-            else:
+            elif buttonvalue==1  and outputfull< cutoff:
+                self.counter_falsenegative+=1
                 resultstring="XXXXX GRU Output NOT Correct! XXXXX"
-                self.GRUfailcounter+=1
+            elif buttonvalue==0 and outputfull<= cutoff :
+                self.counter_truenegative+=1
+                resultstring="00000 GRU Output Correct! 00000" 
+            elif buttonvalue==0 and outputfull> cutoff:
+                self.counter_falsepositive+=1
+                resultstring="XXXXX GRU Output NOT Correct! XXXXX"
                 
                 #output incorrect GRU results to file, along with episode and timestep info
                 with open(self.GRUresultsfilename, mode='a') as outputfile:
                     writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    writer.writerow([buttonvalue,round(outputfull, 2),(self.GRUsuccesscounter+self.GRUfailcounter),self.episodecounter,self._envStepCounter])
+                    writer.writerow([self.episodecounter,self._envStepCounter,(self.GRUsuccesscounter+self.GRUfailcounter),buttonvalue,round(outputfull, 2),
+                                   self.counter_truepositive ,self.counter_truenegative,self.counter_falsepositive, self.counter_falsenegative])
+                    
+                    
+        #"Episode","Timestep","AttemptNum","ButtonData","GRUOutput","TruePositiveCount","TrueNegativeCount","FalsePositiveCount","FalseNegativeCount
         else: 
             resultstring=("unfilled GRU buffer at size ")
             resultstring=resultstring+str(self.normalized5channel.shape[1])
@@ -611,9 +629,9 @@ class UR5Env0(gym.Env):
                                  
         #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
         print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, " Reward:",round(self.currentreward, 2)," Button Pressed?",buttonvalue,
-              " GRU output:",  round(outputfull, 2),resultstring  , "GRU Correct qty", self.GRUsuccesscounter, "GRU Incorrect qty", self.GRUfailcounter,"GRU Total Attempts",self.GRUsuccesscounter+self.GRUfailcounter ) 
-        
-
+              " GRU output:",  round(outputfull, 2), "GRU_TruePosQty", self.counter_truepositive,"GRU_TrueNegQty",self.counter_truenegative ,
+              "GRU_FalsePosQty",self.counter_falsepositive,"GRU_FalseNegQty",self.counter_falsenegative,"TotalQty",
+              self.counter_truepositive+self.counter_truenegative+self.counter_falsepositive+self.counter_falsenegative,resultstring ) 
         return self.currentreward 
     
 

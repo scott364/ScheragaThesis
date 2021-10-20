@@ -1,0 +1,2 @@
+Episode,Timestep,AttemptNum,ButtonData,GRUOutput,TruePositiveCount,TrueNegativeCount,FalsePositiveCount,FalseNegativeCount
+1,29,0,0,0.83,0,19,1,0
