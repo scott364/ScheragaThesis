@@ -63,7 +63,7 @@ if bot=='red':
 
 #HOST_DC = '192.168.0.103'
 HOST_DC = '128.138.224.89' 
-PORT_DC= 65488
+PORT_DC= 65489
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -119,7 +119,7 @@ def evaluate_episode(model, data,  maxdifference=0.2, verbose=False):
 class UR5Env0(gym.Env):
 
 
-    def __init__(self,TotalEpisodes=100,StepsPerEpisode=10,continuousactionspace=False):
+    def __init__(self,TotalEpisodes=100,StepsPerEpisode=10,continuousactionspace=False,actualbutton=True):
         
         device = torch.device("cpu")
         #self.gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )  #Getting error here : python AttributeError: Can't get attribute 'GRUNet' on <module '__main__'>
@@ -131,6 +131,7 @@ class UR5Env0(gym.Env):
         self._observation = []
         
         self.continuousactionspace=continuousactionspace
+        self.actualbutton=actualbutton
         
         if self.continuousactionspace==False:
             self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
@@ -530,48 +531,51 @@ class UR5Env0(gym.Env):
         else: 
             self.currentreward = -2
             self.currentreward+=  (initialZ-currentZ)
-        """
+        
+        
+        if self.actualbutton==True:
         #request a 0 or 1 from the arduino button   
-        arduinoserial.write(b'q\n')  
-        arduinobuttonstatus = arduinoserial.readline()
-        buttonvalue=0
-        if arduinobuttonstatus== b'1\r\n':
-            #print("BUTTON PRESSED! Episode over!")
-            buttonvalue=1
-            self.buttonoutputlist.append(buttonvalue)
+            arduinoserial.write(b'q\n')  
+            arduinobuttonstatus = arduinoserial.readline()
+            buttonvalue=0
+            if arduinobuttonstatus== b'1\r\n':
+                #print("BUTTON PRESSED! Episode over!")
+                buttonvalue=1
+                self.buttonoutputlist.append(buttonvalue)
+
+                self.currentreward=2
+                #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
+                self.doneflag=1
+                self.totalsuccesscounter+=1
+                #print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
+
+            elif arduinobuttonstatus== b'0\r\n':  #If not
+                buttonvalue=0
+                self.buttonoutputlist.append(buttonvalue) 
             
-            self.currentreward=2
-            #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
-            self.doneflag=1
-            self.totalsuccesscounter+=1
-            #print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
-            
-        elif arduinobuttonstatus== b'0\r\n':  #If not
+        elif self.actualbutton==False:  #Use "virtual button" based on Z force and Z position threshholds. 
+             
             buttonvalue=0
-            self.buttonoutputlist.append(buttonvalue) 
-            
-        """   
-        buttonvalue=0
-        Zpositionthreshhold=0.281
-        if self.AVG_FT_list[2]<-6 and (currentZ/39.3701)<Zpositionthreshhold:
-            print("CONTACT!","Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2])
-            buttonvalue=1
-            self.buttonoutputlist.append(buttonvalue)
-            self.currentreward=2
-            self.doneflag=1
-            self.totalsuccesscounter+=1
-        elif (currentZ/39.3701)<Zpositionthreshhold:
-            print("NO CONTACT! Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2] ," Z force above threshold of -6")    
-            buttonvalue=0
-            self.buttonoutputlist.append(buttonvalue) 
-        elif self.AVG_FT_list[2]<-6:
-            print("NO CONTACT! Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2] ,"Z position above threshold of 0.281 meters")
-            buttonvalue=0
-            self.buttonoutputlist.append(buttonvalue) 
-        else:
-            print(" NO CONTACT! Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2] ,"Z position above threshold of 0.281 meters and Z force above threshold of -6")      
-            buttonvalue=0
-            self.buttonoutputlist.append(buttonvalue) 
+            Zpositionthreshhold=0.281
+            if self.AVG_FT_list[2]<-6 and (currentZ/39.3701)<Zpositionthreshhold:
+                print("CONTACT!","Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2])
+                buttonvalue=1
+                self.buttonoutputlist.append(buttonvalue)
+                self.currentreward=2
+                self.doneflag=1
+                self.totalsuccesscounter+=1
+            elif (currentZ/39.3701)<Zpositionthreshhold:
+                print("NO CONTACT! Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2] ," Z force above threshold of -6")    
+                buttonvalue=0
+                self.buttonoutputlist.append(buttonvalue) 
+            elif self.AVG_FT_list[2]<-6:
+                print("NO CONTACT! Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2] ,"Z position above threshold of 0.281 meters")
+                buttonvalue=0
+                self.buttonoutputlist.append(buttonvalue) 
+            else:
+                print(" NO CONTACT! Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2] ,"Z position above threshold of 0.281 meters and Z force above threshold of -6")      
+                buttonvalue=0
+                self.buttonoutputlist.append(buttonvalue) 
             
         #Scaling for GRU. Output of normalized range is between 0 and 1. 
         scaledmax=1
@@ -597,7 +601,7 @@ class UR5Env0(gym.Env):
             outputfull=float(evaluate_episode(self.gru_model, self.normalized5channel_expandeddims))
             #print("GRU Output",outputfull)
        
-            cutoff=0.5
+            cutoff=0.7
             if buttonvalue==1  and outputfull>= cutoff:
                 self.counter_truepositive+=1
                 resultstring="00000 GRU Output Correct! 00000"

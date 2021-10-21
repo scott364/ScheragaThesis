@@ -63,7 +63,7 @@ if bot=='red':
 
 #HOST_DC = '192.168.0.103'
 HOST_DC = '128.138.224.89' 
-PORT_DC= 65488
+PORT_DC= 65489
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -597,7 +597,7 @@ class UR5Env0(gym.Env):
             outputfull=float(evaluate_episode(self.gru_model, self.normalized5channel_expandeddims))
             #print("GRU Output",outputfull)
        
-            cutoff=0.5
+            cutoff=0.7
             if buttonvalue==1  and outputfull>= cutoff:
                 self.counter_truepositive+=1
                 resultstring="00000 GRU Output Correct! 00000"
@@ -629,8 +629,8 @@ class UR5Env0(gym.Env):
                                  
         #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
         print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, " Reward:",round(self.currentreward, 2)," Button Pressed?",buttonvalue,
-              " GRU output:",  round(outputfull, 2), "GRU TruePos qty", self.counter_truepositive,"GRU TrueNeg qty",self.counter_truenegative ,
-              "GRU FalsePos qty",self.counter_falsepositive,"GRU FalseNeg qty",self.counter_falsenegative,"TotalGRU EvalQty",
+              " GRU output:",  round(outputfull, 2), "GRU_TruePosQty", self.counter_truepositive,"GRU_TrueNegQty",self.counter_truenegative ,
+              "GRU_FalsePosQty",self.counter_falsepositive,"GRU_FalseNegQty",self.counter_falsenegative,"TotalQty",
               self.counter_truepositive+self.counter_truenegative+self.counter_falsepositive+self.counter_falsenegative,resultstring ) 
         return self.currentreward 
     
