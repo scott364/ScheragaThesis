@@ -63,7 +63,7 @@ if bot=='red':
 
 #HOST_DC = '192.168.0.103'
 HOST_DC = '128.138.224.89' 
-PORT_DC= 65489
+PORT_DC= 65480
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -207,9 +207,9 @@ class UR5Env0(gym.Env):
             self.headers.append("header"+label)
         today = date.today()    
         todaydate = today.strftime("%m_%d_%Y")
-        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylindernobutton_"+todaydate+'.csv'    
-        self.GRUresultsfilename="GRUresults_cylindernobutton__"+todaydate+'.csv'   
-        self.rewardlistfilename="rewardlist_cylindernobutton__"+todaydate+'.csv'  
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_"+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults_cylinder_withbutton__"+todaydate+'.csv'   
+        self.rewardlistfilename="rewardlist_cylinder_withbutton__"+todaydate+'.csv'  
         
         with open(self.forcetorquebuttonresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -217,7 +217,7 @@ class UR5Env0(gym.Env):
                 
         with open(self.GRUresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                writer.writerow(["Episode","Timestep","AttemptNum","ButtonData","GRUOutput","TruePositiveCount","TrueNegativeCount","FalsePositiveCount","FalseNegativeCount"])
+                writer.writerow(["Episode","Timestep","ButtonData","GRUOutput","TruePositiveCount","TrueNegativeCount","FalsePositiveCount","FalseNegativeCount"])
                 
         with open(self.rewardlistfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -608,6 +608,12 @@ class UR5Env0(gym.Env):
             elif buttonvalue==1  and outputfull< cutoff:
                 self.counter_falsenegative+=1
                 resultstring="XXXXX GRU Output NOT Correct! XXXXX"
+                #output incorrect GRU results to file, along with episode and timestep info
+                with open(self.GRUresultsfilename, mode='a') as outputfile:
+                    writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                    writer.writerow([self.episodecounter,self._envStepCounter,buttonvalue,round(outputfull, 2),
+                                   self.counter_truepositive ,self.counter_truenegative,self.counter_falsepositive, self.counter_falsenegative])
+                
             elif buttonvalue==0 and outputfull<= cutoff :
                 self.counter_truenegative+=1
                 resultstring="00000 GRU Output Correct! 00000" 
@@ -618,7 +624,7 @@ class UR5Env0(gym.Env):
                 #output incorrect GRU results to file, along with episode and timestep info
                 with open(self.GRUresultsfilename, mode='a') as outputfile:
                     writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    writer.writerow([self.episodecounter,self._envStepCounter,(self.GRUsuccesscounter+self.GRUfailcounter),buttonvalue,round(outputfull, 2),
+                    writer.writerow([self.episodecounter,self._envStepCounter,buttonvalue,round(outputfull, 2),
                                    self.counter_truepositive ,self.counter_truenegative,self.counter_falsepositive, self.counter_falsenegative])
                     
                     
