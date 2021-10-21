@@ -146,12 +146,15 @@ class UR5Env0(gym.Env):
         #self.observation_space = spaces.Box(np.array([-100,-100,-100,-100,-100, -30, -30]), 
          #                                   np.array([100,100,100,100,100,30, 30])) # 5 forcetorque, xyz pose
         
-        self.observation_space = spaces.Box(np.array([-5,-5,-25,-1,-1,-8.5, -20.5]), 
-                                            np.array([5,  5,  0, 1, 1,-6.5,-18.5])) # 5 forcetorque, xyz pose
+        #self.observation_space = spaces.Box(np.array([-5,-5,-25,-1,-1,-8.5, -20.5]), 
+        #                                    np.array([5,  5,  0, 1, 1,-6.5,-18.5])) # 5 forcetorque, xyz pose
         
-        
-        
+        self.observation_space = spaces.Box(np.array([-1,-1,-1,-1,-1]), 
+                                            np.array([1,  1, 1, 1, 1])) # 5 forcetorque, xyz pose
 
+       # xforce_normalized,yforce_normalized,zforce_normalized, rolltorque_normalized,pitchtorque_normalized,x_pose-initialX,y_pose-initialY]
+
+    
         self.TotalEpisodes=TotalEpisodes
         self.StepsPerEpisode=StepsPerEpisode
         
@@ -207,9 +210,9 @@ class UR5Env0(gym.Env):
             self.headers.append("header"+label)
         today = date.today()    
         todaydate = today.strftime("%m_%d_%Y")
-        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_"+todaydate+'.csv'    
-        self.GRUresultsfilename="GRUresults_cylinder_withbutton__"+todaydate+'.csv'   
-        self.rewardlistfilename="rewardlist_cylinder_withbutton__"+todaydate+'.csv'  
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_test_noposeobs_"+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults_cylinder_withbutton_test_noposeobs_"+todaydate+'.csv'   
+        self.rewardlistfilename="rewardlist_cylinder_withbutton_test_noposeobs_"+todaydate+'.csv'  
         
         with open(self.forcetorquebuttonresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -489,15 +492,20 @@ class UR5Env0(gym.Env):
         
         if self.initialaction==1:
             self.initialaction=0 
+            #return[xforce_normalized,yforce_normalized,zforce_normalized,
+            #           rolltorque_normalized,pitchtorque_normalized,0,0] 
             return[xforce_normalized,yforce_normalized,zforce_normalized,
-                       rolltorque_normalized,pitchtorque_normalized,0,0] 
+                       rolltorque_normalized,pitchtorque_normalized] 
+        
             #Initial difference in pose is 0, as it is before first action
             
         elif self.initialaction==0:
             [initialX,initialY,initialZ]=self.episodeinitialpose #in inches 
+            #return[xforce_normalized,yforce_normalized,zforce_normalized,
+            #           rolltorque_normalized,pitchtorque_normalized,x_pose-initialX,y_pose-initialY]
             return[xforce_normalized,yforce_normalized,zforce_normalized,
-                       rolltorque_normalized,pitchtorque_normalized,x_pose-initialX,y_pose-initialY]
-    
+                       rolltorque_normalized,pitchtorque_normalized]
+            
     def _compute_reward(self):
         #print("Compute reward")
         #if self.totalstepstaken>=410:
@@ -524,9 +532,9 @@ class UR5Env0(gym.Env):
         
 
         XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula from initial point
-    
+        XYdist=XYdist*25.4 #convert dist to mm
         #if peg is too far away from initial, set reward to -1
-        if XYdist>0.25:  
+        if XYdist>6:  #in mm. This is double the random positioning
             self.currentreward =-2
         else: 
             self.currentreward = -2
