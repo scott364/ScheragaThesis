@@ -119,11 +119,13 @@ def evaluate_episode(model, data,  maxdifference=0.2, verbose=False):
 class UR5Env0(gym.Env):
 
 
-    def __init__(self,TotalEpisodes=100,StepsPerEpisode=10,continuousactionspace=False,actualbutton=True):
+    def __init__(self,TotalEpisodes=100,StepsPerEpisode=10,continuousactionspace=False,actualbutton=True,GRUrewards=True):
         
         device = torch.device("cpu")
         #self.gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )  #Getting error here : python AttributeError: Can't get attribute 'GRUNet' on <module '__main__'>
-        self.gru_model=torch.load('currentmodel_3Xcopiedsuccess10_19_2021.pt', map_location=torch.device('cpu') ) 
+        #self.gru_model=torch.load('currentmodel_3Xcopiedsuccess10_19_2021.pt', map_location=torch.device('cpu') ) 
+        self.gru_model=torch.load('currentmodel_fromtraineddata_10_21_2021.pt', map_location=torch.device('cpu') ) 
+        
         self.gru_model.eval() #put into eval mode
         print("GRU model loaded")
 
@@ -132,6 +134,7 @@ class UR5Env0(gym.Env):
         
         self.continuousactionspace=continuousactionspace
         self.actualbutton=actualbutton
+        self.GRUrewards=GRUrewards
         
         if self.continuousactionspace==False:
             self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
@@ -210,9 +213,9 @@ class UR5Env0(gym.Env):
             self.headers.append("header"+label)
         today = date.today()    
         todaydate = today.strftime("%m_%d_%Y")
-        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_test_noposeobs_"+todaydate+'.csv'    
-        self.GRUresultsfilename="GRUresults_cylinder_withbutton_test_noposeobs_"+todaydate+'.csv'   
-        self.rewardlistfilename="rewardlist_cylinder_withbutton_test_noposeobs_"+todaydate+'.csv'  
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_train_noposeobs_GRUrewards"+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_"+todaydate+'.csv'   
+        self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_"+todaydate+'.csv'  
         
         with open(self.forcetorquebuttonresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -530,16 +533,16 @@ class UR5Env0(gym.Env):
         bonusreward=0
         self.currentreward=0 
         
+        if self.GRUrewards==False:
+            XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula from initial point
+            XYdist=XYdist*25.4 #convert dist to mm
+            #if peg is too far away from initial, set reward to -1
+            if XYdist>6:  #in mm. This is double the random positioning
+                self.currentreward =-2
+            else: 
+                self.currentreward = -2
+                self.currentreward+=  (initialZ-currentZ)
 
-        XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula from initial point
-        XYdist=XYdist*25.4 #convert dist to mm
-        #if peg is too far away from initial, set reward to -1
-        if XYdist>6:  #in mm. This is double the random positioning
-            self.currentreward =-2
-        else: 
-            self.currentreward = -2
-            self.currentreward+=  (initialZ-currentZ)
-        
         
         if self.actualbutton==True:
         #request a 0 or 1 from the arduino button   
@@ -550,8 +553,10 @@ class UR5Env0(gym.Env):
                 #print("BUTTON PRESSED! Episode over!")
                 buttonvalue=1
                 self.buttonoutputlist.append(buttonvalue)
-
-                self.currentreward=2
+                
+                if self.GRUrewards==False:
+                    self.currentreward=2
+                    
                 #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
                 self.doneflag=1
                 self.totalsuccesscounter+=1
@@ -569,7 +574,8 @@ class UR5Env0(gym.Env):
                 print("CONTACT!","Z pose:",(currentZ/39.3701),"Z force:",self.AVG_FT_list[2])
                 buttonvalue=1
                 self.buttonoutputlist.append(buttonvalue)
-                self.currentreward=2
+                if self.GRUrewards==False:
+                    self.currentreward=2
                 self.doneflag=1
                 self.totalsuccesscounter+=1
             elif (currentZ/39.3701)<Zpositionthreshhold:
@@ -603,12 +609,32 @@ class UR5Env0(gym.Env):
         #print("normalized5channel:")
         #print(self.normalized5channel)
         #print("normalized5channel.shape: ",self.normalized5channel.shape)
-
+        
+        if self.normalized5channel.shape[1]<10 and self.GRUrewards==True:  #for first 10 timesteps just use normal rewards.
+            XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula from initial point
+            XYdist=XYdist*25.4 #convert dist to mm
+        
+            if XYdist>6:  #in mm. This is double the random positioning
+                self.currentreward =-2    #if peg is too far away from initial, set reward to -2
+            else: 
+                self.currentreward = -2
+                self.currentreward+=  (initialZ-currentZ)
+            
+            
         if self.normalized5channel.shape[1]==10:
             self.normalized5channel_expandeddims=np.expand_dims(self.normalized5channel, axis=0)
             outputfull=float(evaluate_episode(self.gru_model, self.normalized5channel_expandeddims))
             #print("GRU Output",outputfull)
-       
+            if self.GRUrewards==True:
+                self.currentreward =-1 #start at -1. Using GRU based rewards, the Reward min is therefore -2, and max is 0. 
+                
+                reward_gru_output=outputfull
+                if reward_gru_output>1:
+                    reward_gru_output=1
+                if reward_gru_output<-1:
+                    reward_gru_output=-1    
+                self.currentreward+=outputfull
+                
             cutoff=0.7
             if buttonvalue==1  and outputfull>= cutoff:
                 self.counter_truepositive+=1
