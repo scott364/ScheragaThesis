@@ -124,7 +124,9 @@ class UR5Env0(gym.Env):
         device = torch.device("cpu")
         #self.gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )  #Getting error here : python AttributeError: Can't get attribute 'GRUNet' on <module '__main__'>
         #self.gru_model=torch.load('currentmodel_3Xcopiedsuccess10_19_2021.pt', map_location=torch.device('cpu') ) 
-        self.gru_model=torch.load('currentmodel_fromtraineddata_10_21_2021.pt', map_location=torch.device('cpu') ) 
+        
+        #self.gru_model=torch.load('currentmodel_fromtraineddata_10_21_2021.pt', map_location=torch.device('cpu') ) 
+        self.gru_model=torch.load('currentmodel_from_training_data_10_21_2021.pt', map_location=torch.device('cpu') ) 
         
         self.gru_model.eval() #put into eval mode
         print("GRU model loaded")
@@ -633,7 +635,7 @@ class UR5Env0(gym.Env):
                     reward_gru_output=1
                 if reward_gru_output<-1:
                     reward_gru_output=-1    
-                self.currentreward+=outputfull
+                self.currentreward+=reward_gru_output
                 
             cutoff=0.7
             if buttonvalue==1  and outputfull>= cutoff:

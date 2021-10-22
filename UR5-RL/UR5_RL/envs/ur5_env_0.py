@@ -124,7 +124,9 @@ class UR5Env0(gym.Env):
         device = torch.device("cpu")
         #self.gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )  #Getting error here : python AttributeError: Can't get attribute 'GRUNet' on <module '__main__'>
         #self.gru_model=torch.load('currentmodel_3Xcopiedsuccess10_19_2021.pt', map_location=torch.device('cpu') ) 
-        self.gru_model=torch.load('currentmodel_fromtraineddata_10_21_2021.pt', map_location=torch.device('cpu') ) 
+        
+        #self.gru_model=torch.load('currentmodel_fromtraineddata_10_21_2021.pt', map_location=torch.device('cpu') ) 
+        self.gru_model=torch.load('currentmodel_from_training_data_10_21_2021.pt', map_location=torch.device('cpu') ) 
         
         self.gru_model.eval() #put into eval mode
         print("GRU model loaded")
@@ -558,6 +560,9 @@ class UR5Env0(gym.Env):
                     self.currentreward=2
                     
                 #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
+                
+                
+                #even if GRU rewards are true, still end the episode if the button is pressed!
                 self.doneflag=1
                 self.totalsuccesscounter+=1
                 #print("*****Success condition achieved at tStep",self._envStepCounter,"Total Successes:",self.totalsuccesscounter, "*****")
@@ -633,7 +638,7 @@ class UR5Env0(gym.Env):
                     reward_gru_output=1
                 if reward_gru_output<-1:
                     reward_gru_output=-1    
-                self.currentreward+=outputfull
+                self.currentreward+=reward_gru_output
                 
             cutoff=0.7
             if buttonvalue==1  and outputfull>= cutoff:
