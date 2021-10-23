@@ -123,10 +123,10 @@ class UR5Env0(gym.Env):
         
         device = torch.device("cpu")
         #self.gru_model=torch.load('currentmodel_10_11_2021.pt', map_location=torch.device('cpu') )  #Getting error here : python AttributeError: Can't get attribute 'GRUNet' on <module '__main__'>
-        #self.gru_model=torch.load('currentmodel_3Xcopiedsuccess10_19_2021.pt', map_location=torch.device('cpu') ) 
+        self.gru_model=torch.load('currentmodel_3Xcopiedsuccess10_19_2021.pt', map_location=torch.device('cpu') ) #trying this for 10-22 run. 
         
         #self.gru_model=torch.load('currentmodel_fromtraineddata_10_21_2021.pt', map_location=torch.device('cpu') ) 
-        self.gru_model=torch.load('currentmodel_from_training_data_10_21_2021.pt', map_location=torch.device('cpu') ) 
+        #self.gru_model=torch.load('currentmodel_from_training_data_10_21_2021.pt', map_location=torch.device('cpu') ) #used on 10_21_2021 run
         
         self.gru_model.eval() #put into eval mode
         print("GRU model loaded")
@@ -215,9 +215,9 @@ class UR5Env0(gym.Env):
             self.headers.append("header"+label)
         today = date.today()    
         todaydate = today.strftime("%m_%d_%Y")
-        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_train_noposeobs_GRUrewards"+todaydate+'.csv'    
-        self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_"+todaydate+'.csv'   
-        self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_"+todaydate+'.csv'  
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_train_noposeobs_GRUrewards_olderGRU"+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_olderGRU"+todaydate+'.csv'   
+        self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_olderGRU"+todaydate+'.csv'  
         
         with open(self.forcetorquebuttonresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -631,14 +631,15 @@ class UR5Env0(gym.Env):
             outputfull=float(evaluate_episode(self.gru_model, self.normalized5channel_expandeddims))
             #print("GRU Output",outputfull)
             if self.GRUrewards==True:
-                self.currentreward =-1 #start at -1. Using GRU based rewards, the Reward min is therefore -2, and max is 0. 
+                
                 
                 reward_gru_output=outputfull
                 if reward_gru_output>1:
                     reward_gru_output=1
                 if reward_gru_output<-1:
                     reward_gru_output=-1    
-                self.currentreward+=reward_gru_output
+                self.currentreward=reward_gru_output*2  #range is from -2 to 2
+                #initial run had starting reward of -1, and added the positive or negative GRU output to it. 
                 
             cutoff=0.7
             if buttonvalue==1  and outputfull>= cutoff:
