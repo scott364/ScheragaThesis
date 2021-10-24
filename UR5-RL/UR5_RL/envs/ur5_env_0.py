@@ -219,9 +219,9 @@ class UR5Env0(gym.Env):
             self.headers.append("header"+label)
         today = date.today()    
         todaydate = today.strftime("%m_%d_%Y")
-        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead"+todaydate+'.csv'    
-        self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead"+todaydate+'.csv'   
-        self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead"+todaydate+'.csv'  
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'   
+        self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'  
         
         with open(self.forcetorquebuttonresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -645,6 +645,9 @@ class UR5Env0(gym.Env):
                     reward_gru_output=-2    
                 self.currentreward=reward_gru_output  #range is from -2 to 2
                 #initial run had starting reward of -1, and added the positive or negative GRU output to it. 
+                
+                if arduinobuttonstatus== b'1\r\n':  #if button was pressed, overwrite existing reward and make it 2. This MAY be "cheating".  need to chat with Brad and Nicholaus 10/23/2021
+                    self.currentreward=2
                 
             cutoff=0.7
             if self.buttonvalue==1  and outputfull>= cutoff:
