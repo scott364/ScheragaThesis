@@ -219,9 +219,16 @@ class UR5Env0(gym.Env):
             self.headers.append("header"+label)
         today = date.today()    
         todaydate = today.strftime("%m_%d_%Y")
-        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'    
-        self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'   
-        self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'  
+        #self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'    
+        #self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'   
+        #self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'  
+        
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_PPO_LSTM"+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults_cylinder_withbutton_PPO_LSTM"+todaydate+'.csv'   
+        self.rewardlistfilename="rewardlist_cylinder_withbutton_PPO_LSTM"+todaydate+'.csv'  
+        
+        
+        
         
         with open(self.forcetorquebuttonresultsfilename, mode='w') as outputfile:
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
