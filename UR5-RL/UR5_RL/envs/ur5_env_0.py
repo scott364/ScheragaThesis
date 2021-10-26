@@ -223,9 +223,9 @@ class UR5Env0(gym.Env):
         #self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'   
         #self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'  
         
-        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_PPO_LSTM_smallchamferroundpeg"+todaydate+'.csv'    
-        self.GRUresultsfilename="GRUresults_cylinder_withbutton_PPO_LSTM_smallchamferroundpeg"+todaydate+'.csv'   
-        self.rewardlistfilename="rewardlist_cylinder_withbutton_PPO_LSTM_smallchamferroundpeg"+todaydate+'.csv'  
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_PPO_LSTM_smallchamferroundpeg_4actions"+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults_cylinder_withbutton_PPO_LSTM_smallchamferroundpeg_4actions"+todaydate+'.csv'   
+        self.rewardlistfilename="rewardlist_cylinder_withbutton_PPO_LSTM_smallchamferroundpeg_4actions"+todaydate+'.csv'  
         
         
         
