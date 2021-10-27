@@ -129,11 +129,6 @@ class UR5Env0(gym.Env):
         #self.gru_model=torch.load('currentmodel_from_training_data_10_21_2021.pt', map_location=torch.device('cpu') ) #used on 10_21_2021 run
         #self.gru_model=torch.load('currentmodel_9steplookhead10_23_2021.pt', map_location=torch.device('cpu') ) #used on 10-22-2021 run  Adjusted input data to be 5x9!
         self.gru_model=torch.load('currentmodel_V10A_retroactiveVals_3datasets10_25_2021.pt', map_location=torch.device('cpu') ) #used on 10-25-2021 run  
-        
-        
-        
-        
-        
         self.gru_model.eval() #put into eval mode
         print("GRU model loaded")
 
@@ -216,6 +211,9 @@ class UR5Env0(gym.Env):
         self.counter_falsepositive=0
                 
         self.headers=[]
+        
+        self.GRUepisodeoutputlist=[]
+        
         for i in range(self.StepsPerEpisode):
             label=str(i)
             self.headers.append("header"+label)
@@ -225,10 +223,11 @@ class UR5Env0(gym.Env):
         #self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'   
         #self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'  
         
-        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults_cylinder_withbutton_retroactiveVals"+todaydate+'.csv'    
-        self.GRUresultsfilename="GRUresults_cylinder_withbutton_retroactiveVals"+todaydate+'.csv'   
-        self.rewardlistfilename="rewardlist_cylinder_withbutton_retroactiveVals"+todaydate+'.csv'  
-        
+        namedetail="_cylinder_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascaling_"
+        self.forcetorquebuttonresultsfilename="forcetorquebuttonresults"+namedetail+todaydate+'.csv'    
+        self.GRUresultsfilename="GRUresults"+namedetail+todaydate+'.csv'   
+        self.rewardlistfilename="rewardlist"+namedetail+todaydate+'.csv'  
+        self.AllGRUresultsfilename="AllGRUresults"+namedetail+todaydate+'.csv'   
         
         
         
@@ -244,6 +243,11 @@ class UR5Env0(gym.Env):
                 writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 writer.writerow(["Rewardlist","ButtonData","Zposition(Inches)","Zposition(mm)"])
         
+
+        with open(self.AllGRUresultsfilename, mode='w') as outputfile:
+                writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow(self.headers)
+                
         self.resetEnvironment()
         time.sleep(0.1) 
 
@@ -322,6 +326,7 @@ class UR5Env0(gym.Env):
         self._observation = self._compute_observation() #you *have* to compute and return the observation from reset()
         self.episodeinitialpose=self.currentpose #contains just initial xyz poses IN INCHES
         self.normalized5channel= np.array([[],[],[],[],[]])
+        
         return np.array(self._observation)
     
     def resetEnvironment(self):
@@ -369,7 +374,7 @@ class UR5Env0(gym.Env):
         self.pitchtorquelist=[]
         self.yawtorquelist=[]
         self.buttonoutputlist=[]
-
+        self.GRUepisodeoutputlist=[]
     def _compute_observation(self):
         
         #print("compute obs")
@@ -553,11 +558,11 @@ class UR5Env0(gym.Env):
             XYdist=XYdist*25.4 #convert dist to mm
             #if peg is too far away from initial, set reward to -1
             if XYdist>6:  #in mm. This is double the random positioning
-                self.currentreward =-2
+                self.currentreward =0#-2
             else: 
-                self.currentreward = -2
+                self.currentreward =0# -2
                 self.currentreward+=  (initialZ-currentZ)
-
+    
         
         if self.actualbutton==True:
         #request a 0 or 1 from the arduino button   
@@ -610,16 +615,18 @@ class UR5Env0(gym.Env):
                 self.buttonoutputlist.append(self.buttonvalue) 
             
         #Scaling for GRU. Output of normalized range is between 0 and 1. 
+        """
         scaledmax=1
         scaledmin=0
-        timestep_datasetsize=10 #was 10 was 9 for lookahead
+        
         xforce_normalizedGRU=(((self.AVG_FT_list[0]-self.xforceminGRU)/(self.xforcemaxGRU-self.xforceminGRU))*(scaledmax-scaledmin))+scaledmin
         yforce_normalizedGRU=(((self.AVG_FT_list[1]-self.yforceminGRU)/(self.yforcemaxGRU-self.yforceminGRU))*(scaledmax-scaledmin))+scaledmin
         zforce_normalizedGRU=(((self.AVG_FT_list[2]-self.zforceminGRU)/(self.zforcemaxGRU-self.zforceminGRU))*(scaledmax-scaledmin))+scaledmin
         rolltorque_normalizedGRU=(((self.AVG_FT_list[3]-self.rolltorqueminGRU)/(self.rolltorquemaxGRU-self.rolltorqueminGRU))*(scaledmax-scaledmin))+scaledmin
         pitchtorque_normalizedGRU=(((self.AVG_FT_list[4]-self.pitchtorqueminGRU)/(self.pitchtorquemaxGRU-self.pitchtorqueminGRU))*(scaledmax-scaledmin))+scaledmin
-        
-        newcol=np.array([[xforce_normalizedGRU],[yforce_normalizedGRU],[zforce_normalizedGRU],[rolltorque_normalizedGRU],[pitchtorque_normalizedGRU]])
+        """
+        timestep_datasetsize=10 #was 10 was 9 for lookahead
+        newcol=np.array([[rewardobs[0]],[rewardobs[1]],[rewardobs[2]],[rewardobs[3]],[rewardobs[4]]])
         self.normalized5channel=np.concatenate((self.normalized5channel, newcol), 1)
 
         if self.normalized5channel.shape[1]>timestep_datasetsize:
@@ -632,32 +639,33 @@ class UR5Env0(gym.Env):
         if self.normalized5channel.shape[1]<timestep_datasetsize and self.GRUrewards==True:  #for first 10 timesteps just use normal rewards.
             XYdist=math.sqrt(pow(currentX-initialX,2)+pow(currentY-initialY,2))  #2D distance formula from initial point
             XYdist=XYdist*25.4 #convert dist to mm
-        
+            self.GRUepisodeoutputlist.append(0)
             if XYdist>6:  #in mm. This is double the random positioning
-                self.currentreward =-0.5    #if peg is too far away from initial, set reward to -0.5 switched from -2 because -.5 seems to be a common 
+                self.currentreward =0#-0.5    #if peg is too far away from initial, set reward to -0.5 switched from -2 because -.5 seems to be a common 
             else: 
-                self.currentreward = -0.5
+                self.currentreward = 0#-0.5
                 self.currentreward+=  (initialZ-currentZ)
             
             
         if self.normalized5channel.shape[1]==timestep_datasetsize:
             self.normalized5channel_expandeddims=np.expand_dims(self.normalized5channel, axis=0)
             outputfull=float(evaluate_episode(self.gru_model, self.normalized5channel_expandeddims))
+            self.GRUepisodeoutputlist.append(outputfull)
             #print("GRU Output",outputfull)
             if self.GRUrewards==True:
                 
                 
-                reward_gru_output=outputfull*2
-                if reward_gru_output>2:
-                    reward_gru_output=2
-                if reward_gru_output<-2:
-                    reward_gru_output=-2    
+                reward_gru_output=outputfull#*2
+                if reward_gru_output>1:
+                    reward_gru_output=1
+                if reward_gru_output<-1:
+                    reward_gru_output=-1    
                 self.currentreward=reward_gru_output  #range is from -2 to 2
                 #initial run had starting reward of -1, and added the positive or negative GRU output to it. 
                 
                 
-                #if arduinobuttonstatus== b'1\r\n':  #if button was pressed, overwrite existing reward and make it 2. This MAY be "cheating".  need to chat with Brad and Nicholaus 10/23/2021
-                    #self.currentreward=2
+                #if arduinobuttonstatus== b'1\r\n':  #if button was pressed, overwrite existing reward and make it 1. This MAY be "cheating".  need to chat with Brad and Nicholaus 10/23/2021
+                    #self.currentreward=1
                 
             cutoff=0.7
             if self.buttonvalue==1  and outputfull>= cutoff:
@@ -728,7 +736,18 @@ class UR5Env0(gym.Env):
                     writer.writerow([self.currentreward,self.buttonvalue,currentZ,currentZ*25.4])
                     #"Rewardlist","ButtonData","Zposition"
                     
-                    
+            with open(self.AllGRUresultsfilename, mode='a') as outputfile:
+                writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+                writer.writerow(self.xforcelist)
+                writer.writerow(self.yforcelist)
+                writer.writerow(self.zforcelist)
+                writer.writerow(self.rolltorquelist)
+                writer.writerow(self.pitchtorquelist)
+                writer.writerow(self.buttonoutputlist)
+                writer.writerow(self.GRUepisodeoutputlist)
+                writer.writerow(self.actionlist)
+                
             self.rewardlist.append(self.currentreward)
             self.episodecounter=self.episodecounter+1
             print("   Actionlist:",self.actionlist)
