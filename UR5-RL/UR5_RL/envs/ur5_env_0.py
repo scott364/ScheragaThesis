@@ -62,7 +62,7 @@ if bot=='red':
     
 
 #HOST_DC = '192.168.0.103'
-HOST_DC = '128.138.224.89' 
+HOST_DC = '128.138.224.117' 
 PORT_DC= 65480
 
 #standard messaging method
@@ -223,7 +223,9 @@ class UR5Env0(gym.Env):
         #self.GRUresultsfilename="GRUresults_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'   
         #self.rewardlistfilename="rewardlist_cylinder_withbutton_train_noposeobs_GRUrewards_10-4_13-2021GRU_lookahead_pos2rewardifbuttonpress"+todaydate+'.csv'  
         
-        namedetail="_cylinder_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascaling_"
+        #namedetail="_cylinder_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascaling_"
+        #namedetail="_squarepeg_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascalingRun2_"
+        namedetail="_squarepeg_withbutton_normalrewardsrun2_"
         self.forcetorquebuttonresultsfilename="forcetorquebuttonresults"+namedetail+todaydate+'.csv'    
         self.GRUresultsfilename="GRUresults"+namedetail+todaydate+'.csv'   
         self.rewardlistfilename="rewardlist"+namedetail+todaydate+'.csv'  
@@ -575,7 +577,7 @@ class UR5Env0(gym.Env):
                 self.buttonoutputlist.append(self.buttonvalue)
                 
                 if self.GRUrewards==False:
-                    self.currentreward=2
+                    self.currentreward=1
                     
                 #self.currentreward+(1-(self._envStepCounter/self.StepsPerEpisode))+0.3  #bonus reward for success, increases             #the earlier in the episode it happens. 
                 
