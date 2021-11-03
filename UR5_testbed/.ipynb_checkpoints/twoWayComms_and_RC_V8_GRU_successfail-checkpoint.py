@@ -19,8 +19,8 @@ import torch.optim as optim
 
 import math
 
-HOST2 = '128.138.224.89' #'192.168.0.103' #'128.138.224.236'
-PORT2= 65487
+HOST2 = '128.138.224.117'#'192.168.0.103' #'128.138.224.236'
+PORT2= 65480
 
 if bot=='red':
     from remote_FT_client import RemoteFTclient
@@ -135,7 +135,9 @@ def execute_rl():
     rolltorquemax= 6.203413009643555
     pitchtorquemin= -6.052636623382568 
     pitchtorquemax= 5.1588873863220215
+ 
     """
+    
     class GRUNet(nn.Module):
         def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.2):
             super(GRUNet, self).__init__()
@@ -289,7 +291,7 @@ def execute_rl():
                             
                             
                         scaledmax=1
-                        scaledmin=0
+                        scaledmin=-1
                         xforce_normalized=(((forcetorque[0]-xforcemin)/(xforcemax-xforcemin))*(scaledmax-scaledmin))+scaledmin
                         yforce_normalized=(((forcetorque[1]-yforcemin)/(yforcemax-yforcemin))*(scaledmax-scaledmin))+scaledmin
                         zforce_normalized=(((forcetorque[2]-zforcemin)/(zforcemax-zforcemin))*(scaledmax-scaledmin))+scaledmin
@@ -297,6 +299,8 @@ def execute_rl():
                         pitchtorque_normalized=(((forcetorque[4]-pitchtorquemin)/(pitchtorquemax-pitchtorquemin))*(scaledmax-scaledmin))+scaledmin
 
                         newcol=np.array([[xforce_normalized],[yforce_normalized],[zforce_normalized],[rolltorque_normalized],[pitchtorque_normalized]])
+                        
+                        
                         normalized5channel=np.concatenate((normalized5channel, newcol), 1)
 
                         if normalized5channel.shape[1]>10:
@@ -325,7 +329,8 @@ def execute_rl():
                             print("BUTTON NOT PRESSED")
                             buttonoutputlist.append(0) 
 
-
+                        print("Normalized data sent to DQN and GRU:",xforce_normalized, yforce_normalized, 
+                                          zforce_normalized,  rolltorque_normalized, pitchtorque_normalized)
 
                     elif bot=='red':
                         data2 = sock.recv(64)#(64) 

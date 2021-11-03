@@ -129,6 +129,8 @@ class UR5Env0(gym.Env):
         #self.gru_model=torch.load('currentmodel_from_training_data_10_21_2021.pt', map_location=torch.device('cpu') ) #used on 10_21_2021 run
         #self.gru_model=torch.load('currentmodel_9steplookhead10_23_2021.pt', map_location=torch.device('cpu') ) #used on 10-22-2021 run  Adjusted input data to be 5x9!
         self.gru_model=torch.load('currentmodel_V10A_retroactiveVals_3datasets10_25_2021.pt', map_location=torch.device('cpu') ) #used on 10-25-2021 run  
+        
+        
         self.gru_model.eval() #put into eval mode
         print("GRU model loaded")
 
@@ -225,7 +227,7 @@ class UR5Env0(gym.Env):
         
         #namedetail="_cylinder_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascaling_"
         #namedetail="_squarepeg_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascalingRun2_"
-        namedetail="_squarepeg_withbutton_normalrewardsrun2_"
+        namedetail="_squarepeg_withbutton_GRUrewards_TRAINEDPOLICY_TESTINGRUN"
         self.forcetorquebuttonresultsfilename="forcetorquebuttonresults"+namedetail+todaydate+'.csv'    
         self.GRUresultsfilename="GRUresults"+namedetail+todaydate+'.csv'   
         self.rewardlistfilename="rewardlist"+namedetail+todaydate+'.csv'  
@@ -456,21 +458,7 @@ class UR5Env0(gym.Env):
         #print("roll",roll,"pitch",pitch,"yaw",yaw)
         #print("Forces and Torques:", AVG_FT_list)
         
-        """  NEED TO RE-SAMPLE THE VALUES AND FIND A WAY TO ZERO THE FORCES AND TORQUES!!
-        self.xforcemin=-10
-        self.xforcemax=10
-        self.yforcemin=-10
-        self.yforcemax=10
-        
-        self.zforcemin=-15
-        self.zforcemax=10
-        self.rolltorquemin=-2
-        self.rolltorquemax=2
-        self.pitchtorquemin=-2
-        self.pitchtorquemax=2
-        self.yawtorquemin=-.1
-        self.yawtorquemax=.1
-        """ 
+
         #normalized forces and torques for DQN. Normalized range is between -1 and 1.
 
         scaledmax=1
@@ -706,10 +694,15 @@ class UR5Env0(gym.Env):
         
                                  
         #print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, "Z difference",(initialZ-currentZ), " Reward:",self.currentreward )
+        """
         print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, " Reward:",round(self.currentreward, 2)," Button Pressed?",self.buttonvalue,
               " GRU output:",  round(outputfull, 2), "GRU_TruePosQty", self.counter_truepositive,"GRU_TrueNegQty",self.counter_truenegative ,
               "GRU_FalsePosQty",self.counter_falsepositive,"GRU_FalseNegQty",self.counter_falsenegative,"TotalQty",
               self.counter_truepositive+self.counter_truenegative+self.counter_falsepositive+self.counter_falsenegative,resultstring ) 
+        """
+        print("Ep:",self.episodecounter, " tStep:", self._envStepCounter, " Reward:",round(self.currentreward, 2)," Button Pressed?",self.buttonvalue,
+              " GRU output:",  round(outputfull, 2),"FT Observation:",rewardobs ) 
+        
         return self.currentreward 
     
 
