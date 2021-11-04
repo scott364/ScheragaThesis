@@ -63,7 +63,7 @@ if bot=='red':
 
 #HOST_DC = '192.168.0.103'
 HOST_DC = '128.138.224.117' 
-PORT_DC= 65480
+PORT_DC= 65481
 
 #standard messaging method
 sock_DC = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -140,6 +140,7 @@ class UR5Env0(gym.Env):
         self.continuousactionspace=continuousactionspace
         self.actualbutton=actualbutton
         self.GRUrewards=GRUrewards
+
         
         if self.continuousactionspace==False:
             self.action_space = spaces.Discrete(5)#Generates number between 0 and 9
@@ -227,7 +228,9 @@ class UR5Env0(gym.Env):
         
         #namedetail="_cylinder_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascaling_"
         #namedetail="_squarepeg_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascalingRun2_"
-        namedetail="_squarepeg_withbutton_GRUrewards_TRAINEDPOLICY_TESTINGRUN"
+        #namedetail="_squarepeg_withbutton_GRUrewards_allTimestepsGRUrewards"
+        namedetail="_roundpeg_PPO_LSTM_withbutton_standardrewards"
+        
         self.forcetorquebuttonresultsfilename="forcetorquebuttonresults"+namedetail+todaydate+'.csv'    
         self.GRUresultsfilename="GRUresults"+namedetail+todaydate+'.csv'   
         self.rewardlistfilename="rewardlist"+namedetail+todaydate+'.csv'  
@@ -635,7 +638,8 @@ class UR5Env0(gym.Env):
             else: 
                 self.currentreward = 0#-0.5
                 self.currentreward+=  (initialZ-currentZ)
-            
+                
+ 
             
         if self.normalized5channel.shape[1]==timestep_datasetsize:
             self.normalized5channel_expandeddims=np.expand_dims(self.normalized5channel, axis=0)
