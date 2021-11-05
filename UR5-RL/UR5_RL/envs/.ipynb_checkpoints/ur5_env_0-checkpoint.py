@@ -229,7 +229,7 @@ class UR5Env0(gym.Env):
         #namedetail="_cylinder_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascaling_"
         #namedetail="_squarepeg_withbutton_retroactiveVals_GRUrewardsonly_correctedGRUdatascalingRun2_"
         #namedetail="_squarepeg_withbutton_GRUrewards_allTimestepsGRUrewards"
-        namedetail="_roundpeg_PPO_LSTM_lr0.0001_withbutton_standardrewards"
+        namedetail="_squarepeg_PPO_LSTM_lr0.0001_withbutton_standardrewards"
         
         self.forcetorquebuttonresultsfilename="forcetorquebuttonresults"+namedetail+todaydate+'.csv'    
         self.GRUresultsfilename="GRUresults"+namedetail+todaydate+'.csv'   
