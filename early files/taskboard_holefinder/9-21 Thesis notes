@@ -1,0 +1,56 @@
+work on STL location generator
+
+load stl
+
+be able to click on items in stl viewer
+put pieces of STL viewer together
+
+assy viewer should be what we create assembly plan
+
+double clcik on an tiem, pulldown menu as to how to categorize it
+ 
+from STL file of taskboard- output each of the positons, highlight hole positons. Allow user to click on each hole, a dropdown menu appears of each of the potential hole sizes,
+
+outputs either code or coordinates associated with hole type
+
+draw trimesh
+
+trimesh is in OGL utils 
+
+do not modify main_template
+james's final project is in exp_graphics 
+--------------
+run the following:
+hg clone https://hg.libsdl.org/SDL SDL
+cd SDL
+mkdir build
+cd build
+../configure
+make
+sudo make install
+
+sudo apt-get install libsdl2-mixer-dev
+git clone https://gitlab.com/libeigen/eigen.git
+-----------
+
+1st main step Load stl into trimesh, draw_trimesh
+
+cad processing -stl,-stl_reader SHOULD be able to load stls.
+creates an STLMesh object, that I can iterate through, which belongs to the stl_reader library.
+
+
+I should be able to use lines 22-30ish in cadprocessing-stl-readme.md
+make sure line 20 works. -DONE
+
+readme is an example usage
+
+a 5 line C++ should work. 
+
+a nextested for loop should be albe to load everything into a trimesh
+
+
+
+to learn:
+c++ pointers
+
+
