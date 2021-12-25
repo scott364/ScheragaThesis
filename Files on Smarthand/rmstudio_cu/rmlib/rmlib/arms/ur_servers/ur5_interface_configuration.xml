@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<rtde_config>
+    <recipe key="out">
+        <field name="timestamp" type="DOUBLE"/>
+        <field name="actual_TCP_pose" type="VECTOR6D"/>
+        <field name="actual_TCP_speed" type="VECTOR6D"/>
+        <field name="actual_TCP_force" type="VECTOR6D"/>
+        <field name="actual_q" type="VECTOR6D"/>
+        <field name="target_q" type="VECTOR6D"/>
+        <field name="actual_digital_input_bits" type="UINT64"/>
+        <field name="safety_status_bits" type="UINT32"/>
+        <field name="robot_status_bits" type="UINT32"/>
+        <field name="ft_raw_wrench" type="VECTOR6D" />
+        <field name="payload" type="DOUBLE" />
+        <field name="payload_cog" type="VECTOR3D" />
+    </recipe>
+</rtde_config>
